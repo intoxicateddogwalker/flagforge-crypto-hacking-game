@@ -1,0 +1,1885 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>FlagForge Crypto Hacking Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/v86@0.5.472/build/libv86.js"></script>
+    <style>
+      :root {
+        --bg: #04070a; --bg2: #070d12; --panel: #0a1210; --panel2: #0c1611;
+        --line: #1d3a2c; --line2: #14352a; --ink: #c9f5dd; --dim: #6f9c84; --faint: #41604f;
+        --grn: #2bff88; --grn2: #17c964; --cyan: #39d5e8; --amber: #ffb340; --red: #ff4d5e; --redbg: #2a0d12;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: radial-gradient(1100px 500px at 85% -10%, rgba(23,201,100,.08), transparent 60%),
+          radial-gradient(900px 500px at -10% 110%, rgba(57,213,232,.05), transparent 60%), var(--bg);
+        color: var(--ink); font-family: var(--mono); font-size: 15px; line-height: 1.5; min-height: 100vh;
+      }
+      button, input, select, textarea { font-family: var(--mono); }
+      button { min-height: 2.5rem; cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--grn); outline-offset: 2px; }
+
+      .topbar { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem .9rem; padding: .65rem 1rem; background: rgba(4,9,8,.92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+      .brand { font-weight: 800; letter-spacing: .06em; font-size: 1.05rem; color: var(--grn); white-space: nowrap; }
+      .brand .slash { color: var(--cyan); }
+      .brand small { display: block; font-weight: 400; font-size: .62rem; letter-spacing: .18em; color: var(--faint); }
+      .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-left: auto; }
+      .chip { border: 1px solid var(--line); background: var(--panel); padding: .35rem .7rem; font-size: .8rem; white-space: nowrap; }
+      .chip b { color: var(--grn); font-weight: 800; }
+      .chip .lab { color: var(--faint); font-size: .64rem; letter-spacing: .14em; display: block; line-height: 1.1; }
+      .chip.status-off { border-color: var(--red); background: var(--redbg); }
+      .chip.status-off b { color: var(--red); }
+
+      .layout { display: grid; gap: 1rem; padding: 1rem; grid-template-columns: 340px minmax(0,1fr) 320px; grid-template-areas: "map term rail"; max-width: 1560px; margin: 0 auto; align-items: start; }
+      .col-map { grid-area: map; display: flex; flex-direction: column; gap: 1rem; }
+      .col-term { grid-area: term; min-width: 0; }
+      .col-rail { grid-area: rail; display: flex; flex-direction: column; gap: 1rem; }
+      @media (max-width: 1100px) { .layout { grid-template-columns: minmax(0,1fr) 300px; grid-template-areas: "term rail" "map rail"; } }
+      @media (max-width: 760px) { .layout { grid-template-columns: minmax(0,1fr); grid-template-areas: "term" "map" "rail"; padding: .7rem; } }
+
+      .panel { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line); padding: .9rem; }
+      .panel h2 { margin: 0 0 .7rem; font-size: .72rem; letter-spacing: .22em; font-weight: 800; color: var(--dim); text-transform: uppercase; display: flex; align-items: center; gap: .5rem; }
+      .panel h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+      .panel h2 .dot { width: .5rem; height: .5rem; background: var(--grn); box-shadow: 0 0 8px var(--grn); flex: none; }
+
+      #netmap { width: 100%; height: 300px; display: block; background: #050b08; border: 1px solid var(--line2); cursor: pointer; }
+      .maphint { font-size: .72rem; color: var(--faint); margin-top: .45rem; }
+      .targets { display: flex; flex-direction: column; gap: .5rem; margin-top: .7rem; }
+      .tgt { display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left; background: #081009; border: 1px solid var(--line2); color: var(--ink); padding: .5rem .6rem; font-size: .8rem; }
+      .tgt:hover { border-color: var(--grn2); }
+      .tgt.sel { border-color: var(--grn); background: #0a1a10; box-shadow: inset 0 0 0 1px var(--grn2); }
+      .tgt.down { opacity: .45; }
+      .tgt .pip { width: .55rem; height: .55rem; border-radius: 50%; background: var(--grn); box-shadow: 0 0 7px var(--grn); flex: none; }
+      .tgt.down .pip { background: var(--red); box-shadow: 0 0 7px var(--red); }
+      .tgt .nm { font-weight: 800; color: #eafff2; }
+      .tgt .meta { color: var(--dim); font-size: .72rem; display: block; }
+      .tgt .bal { margin-left: auto; color: var(--amber); font-weight: 800; white-space: nowrap; }
+      .tgt .tier { font-size: .62rem; letter-spacing: .12em; color: var(--cyan); border: 1px solid #175263; padding: .1rem .35rem; white-space: nowrap; }
+
+      /* ---------- terminal / VM ---------- */
+      .termwrap { border: 1px solid var(--line); background: #050a07; position: relative; overflow: hidden; }
+      .termhead { display: flex; align-items: center; gap: .5rem; padding: .5rem .8rem; border-bottom: 1px solid var(--line); background: #081209; font-size: .72rem; color: var(--dim); letter-spacing: .1em; flex-wrap: wrap; }
+      .termhead .win { display: flex; gap: .35rem; }
+      .termhead .win i { width: .65rem; height: .65rem; border-radius: 50%; display: block; }
+      .vmpill { margin-left: auto; border: 1px solid var(--line2); padding: .15rem .5rem; font-size: .66rem; letter-spacing: .12em; color: var(--amber); }
+      .vmpill.ready { color: var(--grn); border-color: var(--grn2); }
+      .vmpill.dead { color: var(--red); border-color: var(--red); }
+      #termOut { height: 430px; overflow-y: auto; padding: .8rem .9rem; font-size: .83rem; white-space: pre-wrap; word-break: break-word; }
+      @media (max-width: 760px) { #termOut { height: 360px; } }
+      #termOut .l { margin: 0 0 .14rem; }
+      .c-dim { color: var(--dim); } .c-faint { color: var(--faint); } .c-grn { color: var(--grn); }
+      .c-cyan { color: var(--cyan); } .c-amber { color: var(--amber); } .c-red { color: var(--red); }
+      .c-white { color: #eafff2; } .b { font-weight: 800; }
+      .termin { display: flex; align-items: center; gap: .5rem; border-top: 1px solid var(--line); padding: .55rem .8rem; background: #060d09; }
+      .prompt { color: var(--grn); font-weight: 800; white-space: nowrap; font-size: .84rem; }
+      #cmdInput { flex: 1; min-width: 0; background: transparent; border: 0; color: #eafff2; font-size: .9rem; min-height: 2.5rem; caret-color: var(--grn); }
+      #cmdInput:focus { outline: none; }
+      .sigbtn { background: transparent; border: 1px solid var(--line2); color: var(--dim); font-size: .7rem; padding: .2rem .5rem; min-height: 2.2rem; }
+      .sigbtn:hover { color: var(--red); border-color: var(--red); }
+      .quickcmds { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .6rem; }
+      .qbtn { background: #081209; color: var(--dim); border: 1px solid var(--line2); font-size: .74rem; padding: .3rem .6rem; }
+      .qbtn:hover { color: var(--grn); border-color: var(--grn2); }
+
+      .boot { position: absolute; inset: 0; z-index: 5; background: rgba(3,7,5,.94); display: flex; align-items: center; justify-content: center; padding: 1.2rem; }
+      .boot.hide { display: none; }
+      .boot .box { max-width: 460px; width: 100%; }
+      .boot h3 { margin: 0 0 .3rem; color: var(--grn); font-size: 1rem; letter-spacing: .08em; }
+      .boot p { margin: 0 0 .9rem; color: var(--dim); font-size: .8rem; }
+      .bootbar { height: 10px; border: 1px solid var(--line); background: #060d09; margin-bottom: .6rem; }
+      .bootbar i { display: block; height: 100%; width: 0%; background: var(--grn); transition: width .3s; }
+      .bootstage { font-size: .78rem; color: var(--cyan); min-height: 1.2em; }
+      .bootlog { margin-top: .7rem; font-size: .68rem; color: var(--faint); max-height: 110px; overflow: hidden; white-space: pre-wrap; }
+
+      /* ---------- code lab ---------- */
+      .codetabs { display: flex; gap: .45rem; margin-bottom: .6rem; flex-wrap: wrap; }
+      .ctab { background: #081209; color: var(--dim); border: 1px solid var(--line2); font-size: .76rem; padding: .35rem .7rem; font-weight: 800; }
+      .ctab.sel { color: #03130a; background: var(--grn); border-color: var(--grn); }
+      .ctab.sel.cpp { background: var(--cyan); border-color: var(--cyan); }
+      #codeEditor { width: 100%; min-height: 240px; background: #020604; border: 1px solid var(--line2); color: #d9ffe9; font-size: .8rem; line-height: 1.55; padding: .7rem .8rem; resize: vertical; tab-size: 4; }
+      #codeEditor:focus { outline: 1px solid var(--grn2); }
+      .coderow { display: flex; gap: .5rem; align-items: center; margin-top: .6rem; flex-wrap: wrap; }
+      .engstat { font-size: .72rem; color: var(--faint); }
+      .engstat b { color: var(--cyan); }
+      .libbar { border: 1px dashed var(--line2); padding: .6rem .7rem; margin-bottom: .6rem; }
+      .libbar .lt { font-size: .68rem; letter-spacing: .16em; color: var(--faint); margin-bottom: .45rem; }
+      .librow { display: flex; gap: .45rem; flex-wrap: wrap; align-items: center; }
+      .librow input { flex: 1; min-width: 130px; background: #050b08; border: 1px solid var(--line2); color: #eafff2; padding: .45rem .6rem; font-size: .8rem; min-height: 2.4rem; }
+      .librow input:focus { outline: 1px solid var(--grn2); }
+      .libbtn { background: #081209; color: var(--dim); border: 1px solid var(--line2); font-size: .74rem; padding: .35rem .6rem; }
+      .libbtn:hover { color: var(--grn); border-color: var(--grn2); }
+      .libbtn.cy:hover { color: var(--cyan); border-color: var(--cyan); }
+      .libnote { font-size: .72rem; color: var(--faint); margin-top: .5rem; }
+      .libnote code { color: var(--cyan); }
+      .cppflow { display: none; border: 1px solid #175263; background: #07141c; padding: .75rem .8rem; margin-top: .7rem; }
+      .cppflow.show { display: block; }
+      .cppflow h3 { margin: 0 0 .4rem; font-size: .78rem; letter-spacing: .08em; color: var(--cyan); }
+      .cppflow ol { margin: 0 0 .6rem; padding-left: 1.2rem; font-size: .78rem; color: var(--dim); }
+      .cppflow ol li { margin-bottom: .3rem; }
+      .cppflow ol b { color: var(--ink); }
+      .cppflow code { color: var(--cyan); }
+      .cppbtns { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: .6rem; }
+      .cppbtns a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+      #cppPaste { width: 100%; min-height: 110px; background: #020604; border: 1px solid var(--line2); color: #d9ffe9; font-size: .78rem; line-height: 1.5; padding: .6rem .7rem; resize: vertical; }
+      #cppPaste:focus { outline: 1px solid var(--cyan); }
+      .cpppaste-label { display: block; font-size: .68rem; letter-spacing: .14em; color: var(--faint); margin: .2rem 0 .35rem; }
+
+      /* ---------- profiles ---------- */
+      .profbtn { background: #0d2417; color: var(--grn); border: 1px solid var(--grn2); font-weight: 800; font-size: .78rem; padding: .35rem .8rem; }
+      .profbtn:hover { background: #123520; }
+      .tgtrow { display: flex; gap: .45rem; align-items: stretch; }
+      .tgtrow .tgt { flex: 1; min-width: 0; }
+      .tgtprof { flex: none; background: #081209; border: 1px solid var(--line2); color: var(--cyan); font-size: .95rem; padding: 0 .6rem; }
+      .tgtprof:hover { border-color: var(--cyan); }
+      .board tbody tr { cursor: pointer; }
+      .board tbody tr:hover td { background: #0a1a10; }
+      .poverlay { position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-start; justify-content: center; background: rgba(2,5,4,.9); padding: 1rem; overflow-y: auto; }
+      .poverlay.hide { display: none; }
+      .pcard { max-width: 560px; width: 100%; background: linear-gradient(180deg, #0c1a12, #070f0a); border: 1px solid var(--grn2); margin: auto 0; }
+      .pbanner { position: relative; height: 132px; overflow: hidden; border-bottom: 1px solid var(--line); background: #08131a; }
+      .pbanner .bglayer { position: absolute; inset: 0; }
+      .pbanner video.bglayer, .pbanner img.bglayer { width: 100%; height: 100%; object-fit: cover; }
+      .bg-static-void { background: #04070a; }
+      .bg-static-matrix { background: linear-gradient(135deg, #04150b, #0a2e18 55%, #04150b); }
+      .bg-static-crimson { background: linear-gradient(135deg, #1c050a, #3d0d18 55%, #12040a); }
+      .bg-static-abyss { background: linear-gradient(135deg, #03141c, #0a2e3d 55%, #020c11); }
+      .bg-static-amber { background: linear-gradient(135deg, #191003, #3a2708 55%, #0f0a02); }
+      .bg-live-pulse { background: linear-gradient(120deg, #04150b, #0f4d27, #083d5c, #04150b); background-size: 300% 300%; animation: bgmove 9s ease infinite; }
+      .bg-live-rain { background: repeating-linear-gradient(180deg, #03130a 0 14px, #0a3520 14px 16px, #052213 16px 30px); background-size: 100% 220%; animation: bgrain 3.2s linear infinite; }
+      .bg-live-scan { background: linear-gradient(180deg, #060d12, #0d2436); overflow: hidden; }
+      .bg-live-scan::after { content: ""; position: absolute; left: 0; right: 0; height: 34px; background: linear-gradient(180deg, transparent, rgba(57,213,232,.35), transparent); animation: bgscan 2.6s linear infinite; }
+      @keyframes bgmove { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+      @keyframes bgrain { from { background-position: 0 0; } to { background-position: 0 220px; } }
+      @keyframes bgscan { from { top: -40px; } to { top: 140px; } }
+      @media (prefers-reduced-motion: reduce) { .bg-live-pulse, .bg-live-rain { animation: none; } .bg-live-scan::after { animation: none; } }
+      .pclose { position: absolute; top: .5rem; right: .5rem; z-index: 3; background: rgba(3,10,6,.8); color: var(--ink); border: 1px solid var(--line); padding: .25rem .6rem; font-size: .8rem; min-height: 2.2rem; }
+      .pbody { padding: 0 1.1rem 1.1rem; }
+      .phead { display: flex; gap: .9rem; align-items: flex-end; margin-top: -34px; position: relative; z-index: 2; }
+      .pava { width: 76px; height: 76px; border-radius: 50%; border: 2px solid var(--grn); background: #0d2417; overflow: hidden; flex: none; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; font-weight: 800; color: var(--grn); }
+      .pava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .pname { font-size: 1.25rem; font-weight: 800; color: #eafff2; line-height: 1.15; }
+      .psub { font-size: .74rem; color: var(--dim); }
+      .psub b { color: var(--cyan); }
+      .pbio { margin: .8rem 0 0; font-size: .85rem; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+      .pbio.empty { color: var(--faint); font-style: italic; }
+      .pstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-top: .9rem; }
+      @media (max-width: 520px) { .pstats { grid-template-columns: repeat(2, 1fr); } }
+      .pstat { border: 1px solid var(--line2); background: #081009; padding: .5rem .6rem; text-align: center; }
+      .pstat b { display: block; font-size: 1.15rem; color: var(--grn); }
+      .pstat.hacked b { color: var(--red); } .pstat.kd b { color: var(--amber); } .pstat.frg b { color: var(--cyan); }
+      .pstat span { font-size: .62rem; letter-spacing: .12em; color: var(--faint); }
+      .psec { margin-top: 1rem; font-size: .68rem; letter-spacing: .18em; color: var(--faint); }
+      .pmedia { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: .5rem; }
+      .pmedia figure { margin: 0; border: 1px solid var(--line2); overflow: hidden; background: #050b08; }
+      .pmedia img { width: 100%; height: 84px; object-fit: cover; display: block; }
+      .pmedia .tile { height: 84px; display: flex; align-items: flex-end; padding: .35rem .45rem; font-size: .66rem; color: #eafff2; }
+      .pmedia figcaption { font-size: .64rem; color: var(--faint); padding: .25rem .45rem; }
+      .pmedia .none { grid-column: 1 / -1; font-size: .76rem; color: var(--faint); border: 1px dashed var(--line2); padding: .6rem; }
+      .pedit { border-top: 1px dashed var(--line); margin-top: 1.1rem; padding-top: .9rem; }
+      .pedit label { display: block; font-size: .66rem; letter-spacing: .14em; color: var(--faint); margin: .7rem 0 .3rem; }
+      .pedit textarea { width: 100%; min-height: 64px; background: #050b08; border: 1px solid var(--line2); color: #eafff2; padding: .5rem .6rem; font-size: .85rem; resize: vertical; }
+      .pedit input[type="file"] { width: 100%; color: var(--dim); font-size: .78rem; background: #050b08; border: 1px solid var(--line2); padding: .45rem .5rem; }
+      .swatches { display: flex; flex-wrap: wrap; gap: .4rem; }
+      .sw { width: 44px; height: 30px; border: 1px solid var(--line2); cursor: pointer; padding: 0; min-height: 0; position: relative; overflow: hidden; }
+      .sw.sel { border-color: var(--grn); box-shadow: 0 0 0 1px var(--grn); }
+      .sw .bglayer { position: absolute; inset: 0; }
+      .bgprev { margin-top: .5rem; border: 1px solid var(--cyan); height: 92px; position: relative; overflow: hidden; display: none; }
+      .bgprev.show { display: block; }
+      .bgprev video, .bgprev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .bgprev span { position: absolute; left: .45rem; bottom: .35rem; font-size: .66rem; color: #eafff2; background: rgba(3,10,6,.75); padding: .1rem .4rem; }
+      .medthumbs { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .45rem; }
+      .medthumbs figure { margin: 0; position: relative; width: 64px; }
+      .medthumbs img { width: 64px; height: 48px; object-fit: cover; display: block; border: 1px solid var(--line2); }
+      .medthumbs button { position: absolute; top: -8px; right: -8px; min-height: 0; width: 20px; height: 20px; padding: 0; border-radius: 50%; background: var(--red); color: #fff; border: 0; font-size: .7rem; line-height: 1; }
+      .pfoot { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+      /* ---------- year-3000 matrix backdrop (everything except profiles) ---------- */
+      #matrixCanvas { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; opacity: .5; }
+      .layout, .foot { position: relative; z-index: 1; }
+      .termwrap { box-shadow: 0 0 0 1px rgba(43,255,136,.07), 0 0 28px rgba(23,201,100,.15), 0 0 70px rgba(57,213,232,.07); }
+      .termhead { background: linear-gradient(90deg, #081209, #0b2417, #07202c, #081209); background-size: 220% 100%; animation: bgmove 14s ease infinite; }
+      .panel { box-shadow: 0 0 18px rgba(23,201,100,.06); }
+      @media (prefers-reduced-motion: reduce) { .termhead { animation: none; } }
+
+      .attack { display: none; border: 1px solid var(--red); background: var(--redbg); color: #ffd7db; padding: .65rem .8rem; margin-bottom: 1rem; font-size: .85rem; }
+      .attack.show { display: block; animation: blink 1s steps(2) infinite; }
+      .attack b { color: var(--red); }
+      .attack .cd { color: var(--amber); font-weight: 800; }
+      @keyframes blink { 50% { background: #1c070b; } }
+      @media (prefers-reduced-motion: reduce) { .attack.show { animation: none; } }
+      .breach { display: none; border: 1px solid var(--red); background: linear-gradient(180deg, #20090e, #12050a); padding: 1rem; margin-bottom: 1rem; }
+      .breach.show { display: block; }
+      .breach h3 { margin: 0 0 .4rem; color: var(--red); font-size: 1rem; letter-spacing: .1em; }
+      .breach p { margin: 0 0 .8rem; color: #f0b9be; font-size: .85rem; }
+      .btn { background: var(--grn); color: #03130a; border: 0; font-weight: 800; padding: .55rem 1rem; font-size: .85rem; letter-spacing: .04em; }
+      .btn:hover { background: #5cff9f; }
+      .btn.ghost { background: transparent; color: var(--cyan); border: 1px solid #175263; }
+      .btn.ghost:hover { border-color: var(--cyan); color: #aef3ff; }
+      .btn.amber { background: var(--amber); color: #1d1200; }
+      .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+      .wallet-big { font-size: 1.9rem; font-weight: 800; color: var(--amber); line-height: 1.1; }
+      .wallet-big small { font-size: .8rem; color: var(--dim); font-weight: 400; }
+      .wallet-sub { font-size: .74rem; color: var(--faint); margin-top: .3rem; }
+      .rig { display: flex; flex-direction: column; gap: .5rem; }
+      .svc { display: flex; align-items: center; gap: .55rem; border: 1px solid var(--line2); background: #081009; padding: .45rem .6rem; font-size: .8rem; }
+      .svc .nm { font-weight: 800; color: #eafff2; min-width: 3.2rem; }
+      .svc .st { color: var(--dim); font-size: .72rem; flex: 1; }
+      .svc .st.ok { color: var(--grn); }
+      .svc .st.hot { color: var(--red); font-weight: 800; }
+      .svc button { background: transparent; border: 1px solid var(--grn2); color: var(--grn); font-size: .72rem; padding: .25rem .55rem; min-height: 2.25rem; }
+      .svc button:hover { background: #0d2417; }
+      .svc button:disabled { opacity: .4; cursor: not-allowed; }
+      .svc.under { border-color: var(--red); background: var(--redbg); }
+
+      .aiout { background: #050b08; border: 1px solid var(--line2); padding: .6rem .7rem; font-size: .76rem; color: var(--dim); min-height: 5.2rem; white-space: pre-wrap; word-break: break-word; }
+      .aiout pre { margin: .5rem 0; background: #020604; border: 1px solid var(--line2); padding: .55rem .6rem; color: var(--grn); font-size: .72rem; overflow-x: auto; white-space: pre; }
+      .airow { display: flex; gap: .5rem; margin-top: .6rem; }
+      .airow input { flex: 1; min-width: 0; background: #050b08; border: 1px solid var(--line2); color: #eafff2; padding: .5rem .6rem; font-size: .82rem; min-height: 2.5rem; }
+      .airow input:focus { outline: 1px solid var(--grn2); }
+      .airow button { background: #0d2417; color: var(--grn); border: 1px solid var(--grn2); padding: .4rem .8rem; font-weight: 800; font-size: .8rem; }
+      .queuebtn { margin-top: .55rem; width: 100%; display: none; }
+      .queuebtn.show { display: block; }
+
+      .board { width: 100%; border-collapse: collapse; font-size: .8rem; }
+      .board td { padding: .38rem .3rem; border-bottom: 1px dashed #173325; }
+      .board .rk { color: var(--faint); width: 1.6rem; }
+      .board .who { color: #eafff2; }
+      .board .amt { text-align: right; color: var(--amber); font-weight: 800; white-space: nowrap; }
+      .board tr.me td { background: #0a1d11; }
+      .board tr.me .who { color: var(--grn); font-weight: 800; }
+      .board tr.out { opacity: .5; }
+
+      .howto { font-size: .78rem; color: var(--dim); }
+      .learn { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      @media (max-width: 700px) { .learn { grid-template-columns: 1fr; } }
+      .learn h3 { margin: 0 0 .5rem; font-size: .85rem; letter-spacing: .06em; }
+      .learn h3.off { color: var(--grn); } .learn h3.def { color: var(--cyan); }
+      .learn ol { margin: 0; padding-left: 1.15rem; font-size: .8rem; color: var(--dim); }
+      .learn li { margin-bottom: .55rem; }
+      .learn li b { color: var(--ink); }
+      .learn code { display: inline-block; margin-top: .2rem; color: var(--cyan); background: #08131a; padding: .1rem .4rem; font-size: .74rem; }
+      .signup details.learnbox { border: 1px solid var(--line); padding: .6rem .8rem; margin-bottom: 1rem; }
+      .signup details.learnbox summary { cursor: pointer; color: var(--grn); font-weight: 800; font-size: .85rem; }
+      .signup .learn { margin-top: .7rem; }
+      .howto li { margin-bottom: .3rem; }
+      .howto code { color: var(--cyan); background: #08131a; padding: 0 .3rem; }
+      .foot { text-align: center; color: var(--faint); font-size: .72rem; padding: 0 1rem 1.4rem; }
+
+      .signup { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(2,5,4,.88); padding: 1rem; overflow-y: auto; }
+      .signup.hide { display: none; }
+      .signup .card { max-width: 540px; width: 100%; background: linear-gradient(180deg, #0c1a12, #070f0a); border: 1px solid var(--grn2); padding: 1.4rem; box-shadow: 0 0 60px rgba(23,201,100,.15); }
+      .signup h1 { margin: 0 0 .2rem; font-size: 1.5rem; color: var(--grn); letter-spacing: .04em; }
+      .signup h1 .slash { color: var(--cyan); }
+      .signup .tag { color: var(--dim); font-size: .85rem; margin: 0 0 1rem; }
+      .signup .rules { font-size: .8rem; color: var(--dim); margin: 0 0 1rem; padding-left: 1.1rem; }
+      .signup .rules li { margin-bottom: .3rem; }
+      .signup .rules b { color: var(--ink); }
+      .signup label { display: block; font-size: .7rem; letter-spacing: .16em; color: var(--faint); margin-bottom: .35rem; }
+      .signup input { width: 100%; background: #050b08; border: 1px solid var(--line); color: #eafff2; padding: .6rem .7rem; font-size: 1rem; min-height: 2.75rem; margin-bottom: .9rem; }
+      .signup .bonus { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px dashed var(--amber); color: var(--amber); padding: .6rem .8rem; margin-bottom: 1rem; font-size: .85rem; }
+      .signup .bonus b { font-size: 1.15rem; }
+      .signup .go { width: 100%; font-size: 1rem; padding: .8rem; }
+    </style>
+  </head>
+  <body>
+    <canvas id="matrixCanvas" aria-hidden="true"></canvas>
+
+    <!-- ============ SIGNUP ============ -->
+    <div class="signup" id="signup">
+      <div class="card">
+        <h1>FLAG<span class="slash">//</span>FORGE</h1>
+        <p class="tag">Now with a <b style="color:var(--ink)">real Linux virtual machine</b> in your browser — a real x86 PC (v86) booting a real Linux kernel, a real shell, a real filesystem. Plus real Python (CPython) in the Code Lab, and real C++ you compile with g++ on Compiler Explorer in your own tab, then paste the output back. <b style="color:var(--ink)">Hacking here works the same way as real hacking</b> — same commands, same ideas, same steps a real hacker uses. Skills you learn here work on real computers too. Write any hack you can think of — including ones nobody has done before — and run it against the grid.</p>
+        <ul class="rules">
+          <li><b>Real recon:</b> rival rigs live as real files under <b>/targets</b> in the VM. Use ls, cd, cat, grep, find, awk, sed — no fake commands.</li>
+          <li><b>Real exploits:</b> match the exploit module to the misconfigured service, from the shell, from Python, or from your own compiled C++.</li>
+          <li><b>Your machine starts BLANK:</b> just a bare OS — no firewall, no locks, nothing defends you. You build every defense yourself in the terminal (firewall rules, closing ports, stopping services), exactly like a real admin.</li>
+          <li><b>Reactivation costs 100 FRG</b> after a breach. FRG is play money — no cash-out, ever.</li>
+        </ul>
+        <details class="learnbox">
+          <summary>📖 Learn to Play — the basics, in simple words</summary>
+          <div class="learn">
+            <div>
+              <h3 class="off">ATTACK — taking their flag</h3>
+              <ol>
+                <li><b>Pick a house.</b> Every rival computer is like a house. Its name is written on it.<br><code>ls /targets</code></li>
+                <li><b>Peek first.</b> Look at which doors the house has.<br><code>cat /targets/darkvault/services.txt</code></li>
+                <li><b>Read its notes.</b> The house keeps notes called logs. The notes whisper which door was left unlocked.<br><code>grep -Rni "enabled" /targets/darkvault/logs/</code></li>
+                <li><b>Use the right key.</b> Each door needs its own key. The key is called an exploit module. The wrong key just makes noise.<br><code>forge-exploit darkvault hydra-spray</code></li>
+                <li><b>Grab the flag.</b> Inside is a flag — a secret word. Take it, and some of their coins become yours.</li>
+              </ol>
+            </div>
+            <div>
+              <h3 class="def">DEFENSE — guarding your house</h3>
+              <ol>
+                <li><b>Your house has no locks.</b> It starts empty. Nobody locks it for you. You build every lock yourself.</li>
+                <li><b>A door is called a port.</b> An open door means anyone can walk in. See your doors:<br><code>forge-status</code></li>
+                <li><b>A firewall is a bouncer.</b> He stands at a door and says NO to strangers. Put him on door 22:<br><code>iptables -A INPUT -p tcp --dport 22 -j DROP</code></li>
+                <li><b>Close doors you don't need.</b> A shut door can't be walked through.<br><code>service smb stop</code></li>
+                <li><b>When the alarm rings,</b> someone is pushing on one of your doors. If your bouncer guards THAT door, they bounce off. If not, they get in and take coins. Guard the door in the alarm — fast!</li>
+              </ol>
+            </div>
+          </div>
+        </details>
+        <label for="handleInput">CHOOSE YOUR CALLSIGN</label>
+        <input id="handleInput" type="text" maxlength="16" placeholder="e.g. n0va" autocomplete="off" />
+        <div class="bonus"><span>SIGNUP BONUS</span><b>+500 FRG</b></div>
+        <button class="btn go" id="claimBtn">Claim bonus &amp; jack in</button>
+      </div>
+    </div>
+
+    <!-- ============ TOP BAR ============ -->
+    <header class="topbar">
+      <div class="brand">FLAG<span class="slash">//</span>FORGE<small>REAL VM GRID · SEASON 01</small></div>
+      <div class="chips">
+        <div class="chip"><span class="lab">WALLET</span><b id="chipBal">0 FRG</b></div>
+        <div class="chip"><span class="lab">FLAGS</span><b id="chipFlags">0</b></div>
+        <div class="chip"><span class="lab">RANK</span><b id="chipRank">—</b></div>
+        <div class="chip status-on" id="chipStatus"><span class="lab">RIG STATUS</span><b id="chipStatusTxt">ONLINE</b></div>
+        <div class="chip"><span class="lab">YOUR IP</span><b id="chipIp">10.13.0.2</b></div>
+        <button class="profbtn" id="myProfileBtn" type="button">◉ MY PROFILE</button>
+      </div>
+    </header>
+
+    <main class="layout">
+
+      <!-- ============ TERMINAL COLUMN ============ -->
+      <section class="col-term">
+        <div class="attack" id="attackBanner" role="alert"></div>
+
+        <div class="breach" id="breachPanel">
+          <h3>⚠ RIG COMPROMISED</h3>
+          <p id="breachText">Your rig was breached and knocked offline.</p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn amber" id="reactivateBtn">Reactivate rig — 100 FRG</button>
+            <button class="btn ghost" id="loanBtn" style="display:none">Take grid loan +200 FRG</button>
+          </div>
+        </div>
+
+        <div class="termwrap" id="termwrap">
+          <div class="termhead">
+            <span class="win"><i style="background:#ff4d5e"></i><i style="background:#ffb340"></i><i style="background:#2bff88"></i></span>
+            <span id="termTitle">operator@flagforge: real Linux VM (v86 · serial console)</span>
+            <span class="vmpill" id="vmPill">VM: BOOTING…</span>
+          </div>
+          <div id="termOut" aria-live="polite"></div>
+          <div class="boot" id="bootOverlay">
+            <div class="box">
+              <h3>BOOTING REAL LINUX VM</h3>
+              <p>v86 is emulating a real x86 PC in your browser and booting a real Linux kernel (Buildroot/BusyBox userland — the same commands as Alpine: ls, cat, grep, find, awk, sed, vi, sh). First boot downloads ~13 MB from public CDNs and takes a few seconds. The grid panels on the sides are already live.</p>
+              <div class="bootbar"><i id="bootFill"></i></div>
+              <div class="bootstage" id="bootStage">Loading v86 emulator…</div>
+              <div class="bootlog" id="bootLog"></div>
+            </div>
+          </div>
+          <form class="termin" id="cmdForm">
+            <span class="prompt" id="promptTxt">guest@forge:~$</span>
+            <input id="cmdInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="real shell — try: ls -la /targets" />
+            <button type="button" class="sigbtn" id="ctrlCBtn" title="Send Ctrl+C to the VM">^C</button>
+          </form>
+        </div>
+        <div id="screen_container" style="display:none"><div></div><canvas></canvas></div>
+
+        <div class="quickcmds">
+          <button class="qbtn" data-cmd="ls -la /targets">ls -la /targets</button>
+          <button class="qbtn" data-cmd="cat /root/README.txt">cat README</button>
+          <button class="qbtn" data-cmd="forge-help">forge-help</button>
+          <button class="qbtn" data-cmd="targets">targets</button>
+          <button class="qbtn" data-cmd="modules">modules</button>
+          <button class="qbtn" data-cmd="wallet">wallet</button>
+          <button class="qbtn" data-cmd="leaderboard">leaderboard</button>
+        </div>
+
+        <!-- ============ CODE LAB ============ -->
+        <div class="panel" style="margin-top:1rem">
+          <h2><span class="dot"></span>Code Lab — write &amp; run real code</h2>
+          <div class="codetabs">
+            <button class="ctab sel" id="tabPy">Python 3 · CPython (Pyodide)</button>
+            <button class="ctab cpp" id="tabCpp">C++ · g++ (compile in your tab, paste back)</button>
+          </div>
+          <div class="libbar">
+            <div class="lt">LIBRARIES — IMPORT &amp; USE REAL ONES</div>
+            <div class="librow">
+              <input id="pipInput" type="text" placeholder="PyPI package — e.g. numpy, pandas, sympy" autocomplete="off" spellcheck="false" aria-label="PyPI package name to install" />
+              <button class="libbtn" id="pipBtn" type="button">⬇ Install package (pip)</button>
+              <button class="libbtn" id="exNumpyBtn" type="button">Example: Python + numpy</button>
+              <button class="libbtn cy" id="exCppBtn" type="button">Example: C++ + &lt;vector&gt; &lt;cmath&gt;</button>
+            </div>
+            <div class="libnote">Libraries work <b style="color:var(--dim)">exactly like real life</b> — plain <code>import</code> in Python, plain <code>#include</code> in C++, no game-only syntax. If it imports in real Python/C++, it imports here. <b style="color:var(--dim)">Python:</b> the whole standard library works out of the box (<code>import hashlib, itertools, json</code>…). For outside packages, install the real PyPI wheel right in your script — <code>import micropip</code> then <code>await micropip.install("numpy")</code> then <code>import numpy</code> — or type the name above and hit Install. numpy and pandas both work. <b style="color:var(--dim)">C++:</b> <code>#include</code> any standard header (<code>&lt;vector&gt;</code>, <code>&lt;algorithm&gt;</code>, <code>&lt;cmath&gt;</code>, <code>&lt;thread&gt;</code>…) — you set the same headers and any extra linker flags (like <code>-lm -pthread</code>) in Compiler Explorer's own options when you compile there. A <code>// LINK: -lm -pthread</code> line at the top of your file is a handy reminder of which flags to enter there.</div>
+          </div>
+          <textarea id="codeEditor" spellcheck="false" aria-label="Code editor"></textarea>
+          <div class="coderow">
+            <button class="btn" id="runCodeBtn">▶ Run code</button>
+            <button class="btn ghost" id="resetCodeBtn">Reset template</button>
+            <span class="engstat" id="engStat">Engine: <b>Pyodide CPython loads on first run (~10 MB, once)</b></span>
+          </div>
+          <div class="cppflow" id="cppFlow">
+            <h3>C++ — REAL g++ COMPILE, IN YOUR OWN TAB</h3>
+            <ol>
+              <li><b>Copy your code</b> with the button below.</li>
+              <li><b>Open Compiler Explorer</b> in a new tab, paste the code there, pick a g++ compiler, add any flags from your <code>// LINK:</code> line in its compiler options, and turn on <b>Execute the code</b> so it actually runs.</li>
+              <li><b>Copy the program's output</b> (the execution output pane) and <b>paste it back</b> in the box below — or paste it straight into the game terminal. FlagForge reads the <code>@@SCAN@@</code> / <code>@@EXPLOIT@@</code> / <code>@@WALLET@@</code> markers from it, exactly like live output.</li>
+            </ol>
+            <div class="cppbtns">
+              <button class="btn" id="copyCppBtn" type="button">⧉ Copy C++ code</button>
+              <a class="btn ghost" href="https://godbolt.org" target="_blank" rel="noopener noreferrer">↗ Open Compiler Explorer (godbolt.org)</a>
+              <span class="engstat" id="copyCppStat">This page never sends your code anywhere — you carry it over yourself.</span>
+            </div>
+            <label class="cpppaste-label" for="cppPaste">PASTE YOUR PROGRAM'S OUTPUT HERE</label>
+            <textarea id="cppPaste" spellcheck="false" placeholder="Paste the execution output from Compiler Explorer here — e.g. lines containing @@SCAN:darkvault@@ — then hit the button below."></textarea>
+            <div class="cppbtns" style="margin-top:.6rem;margin-bottom:0">
+              <button class="btn" id="parsePasteBtn" type="button">▶ Send pasted output to the grid</button>
+              <button class="btn ghost" id="clearPasteBtn" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="wallet-sub">Both languages get the <b style="color:var(--cyan)">forge bridge</b>: scan a rig, fire an exploit, read your wallet — so code you invent yourself actually plays the game. Python: <code style="color:var(--cyan)">import forge</code> (works alongside any library you install), runs right here. C++: print <code style="color:var(--cyan)">@@SCAN:host@@</code> / <code style="color:var(--cyan)">@@EXPLOIT:host:module@@</code> / <code style="color:var(--cyan)">@@WALLET@@</code> markers (the template shows how), compile and run it for real with g++ in your own Compiler Explorer tab, then paste the output back above — the game acts on the markers. Output lands in the terminal above.</div>
+        </div>
+
+        <div class="panel" style="margin-top:1rem">
+          <h2><span class="dot"></span>How the grid works now</h2>
+          <ul class="howto" style="margin:0;padding-left:1.1rem">
+            <li>The terminal is a <b style="color:var(--ink)">real Linux VM</b>. Rival rigs are real directories: <code>ls -la /targets</code>, then dig: <code>cat /targets/cryptrat/services.txt</code>, <code>grep -Rni "enabled\|anonymous\|relay" /targets/*/logs/</code>, <code>find /targets -name "flag.txt" 2&gt;/dev/null</code>.</li>
+            <li>Logs tell you which service is misconfigured. Exploit it three ways: shell <code>forge-exploit &lt;host&gt; &lt;module&gt;</code> inside the VM, Python <code>forge.exploit(host, module)</code>, or your own C++ printing the bridge markers — compile and run that C++ for real with g++ in your own Compiler Explorer tab, then paste its output back into the Code Lab (or the terminal) and the game acts on the markers.</li>
+            <li>Inline Python right in the terminal: <code>py: print(forge.scan("darkvault"))</code>.</li>
+            <li><b style="color:var(--ink)">Libraries are real too:</b> Python — full standard library, plus install real PyPI packages in your script with <code>import micropip</code> → <code>await micropip.install("numpy")</code> → <code>import numpy as np</code> (pandas works the same way), then mix them with <code>import forge</code>. C++ — <code>#include</code> standard headers, keep a <code>// LINK: -lm -pthread</code> reminder line for the flags to enter in Compiler Explorer when you compile there. The Code Lab has a one-click working example for each language.</li>
+            <li>Game commands in the terminal: <code>forge-help</code>, <code>targets</code>, <code>modules</code>, <code>wallet</code>, <code>forge-status</code> (your open ports + firewall rules), <code>leaderboard</code>, <code>reactivate</code>.</li>
+            <li><b style="color:var(--ink)">Every machine has an IP</b> on 10.13.0.0/24 — yours is <code>10.13.0.2</code>, shown in the top bar, on the map, and in every scan result. Target by name <i>or</i> IP everywhere: <code>forge-exploit 10.13.0.7 hydra-spray</code>, <code>forge.scan("10.13.0.7")</code>, C++ markers with an IP — all the same.</li>
+            <li><b style="color:var(--ink)">Profiles:</b> every operator has one — bio, picture, media, and lifetime record (successful hacks · times hacked · K/D). Open yours with <b>◉ MY PROFILE</b> and customize it: static or live animated background, or upload your own live background (video/GIF) and photos. Click any leaderboard row or the 👤 on a rig to view a rival's profile; in the terminal: <code>profile blackcipher</code> or <code>profile 10.13.0.66</code>.</li>
+            <li><b style="color:var(--ink)">Your rig starts blank</b> — bare OS, no firewall. Build defenses with real commands: <code>iptables -A INPUT -p tcp --dport 22 -j DROP</code>, <code>service http stop</code>, or write your own defense script and run it. When the alarm fires, only a door you actually defended will hold.</li>
+            <li>Everything here works the same way as real hacking — real commands, real code, real techniques. What you learn on this grid transfers to real machines.</li>
+          </ul>
+        </div>
+
+        <div class="panel" style="margin-top:1rem">
+          <h2><span class="dot"></span>Learn to Play — the basics, in simple words</h2>
+          <div class="learn">
+            <div>
+              <h3 class="off">ATTACK — taking their flag</h3>
+              <ol>
+                <li><b>Pick a house.</b> Every rival computer is like a house. Its name is written on it.<br><code>ls /targets</code></li>
+                <li><b>Peek first.</b> Look at which doors the house has.<br><code>cat /targets/darkvault/services.txt</code></li>
+                <li><b>Read its notes.</b> The house keeps notes called logs. The notes whisper which door was left unlocked.<br><code>grep -Rni "enabled" /targets/darkvault/logs/</code></li>
+                <li><b>Use the right key.</b> Each door needs its own key. The key is called an exploit module. The wrong key just makes noise.<br><code>forge-exploit darkvault hydra-spray</code></li>
+                <li><b>Grab the flag.</b> Inside is a flag — a secret word. Take it, and some of their coins become yours.</li>
+              </ol>
+            </div>
+            <div>
+              <h3 class="def">DEFENSE — guarding your house</h3>
+              <ol>
+                <li><b>Your house has no locks.</b> It starts empty — just the bare machine. Nobody locks it for you. You build every lock yourself.</li>
+                <li><b>A door is called a port.</b> An open door means anyone can walk in. See your doors:<br><code>forge-status</code></li>
+                <li><b>A firewall is a bouncer.</b> He stands at a door and says NO to strangers. Put him on door 22:<br><code>iptables -A INPUT -p tcp --dport 22 -j DROP</code></li>
+                <li><b>Close doors you don't need.</b> A shut door can't be walked through.<br><code>service smb stop</code></li>
+                <li><b>When the alarm rings,</b> someone is pushing on one of your doors. If your bouncer guards THAT door, they bounce off. If not, they get in and take coins. Guard the door in the alarm — fast!</li>
+              </ol>
+            </div>
+          </div>
+          <p class="howto" style="margin:.7rem 0 0">That's really all of it. Look at their house, find the unlocked door, use the right key. Lock your own doors before someone else tries them. Real hackers do these same steps — just on bigger houses.</p>
+        </div>
+      </section>
+
+      <!-- ============ MAP ============ -->
+      <section class="col-map">
+        <div class="panel">
+          <h2><span class="dot"></span>Virtual network</h2>
+          <canvas id="netmap" width="640" height="600" aria-label="Network map of rival computers"></canvas>
+          <div class="maphint">Tap a node to select it. Green = online · red = offline · ring = selected. Every machine has its own IP on the grid (10.13.0.x) — printed under each node — and you can target by IP exactly like by name: <code style="color:var(--cyan)">forge-exploit 10.13.0.7 hydra-spray</code>. Every node is also a real folder: /targets/&lt;hostname&gt; in the VM. Hit 👤 on a rig (or click its leaderboard row) to open its profile.</div>
+          <button class="btn ghost" id="selProfileBtn" type="button" style="margin-top:.55rem">👤 View selected rig's profile</button>
+          <div class="targets" id="targetList"></div>
+        </div>
+      </section>
+
+      <!-- ============ RAIL ============ -->
+      <aside class="col-rail">
+        <div class="panel">
+          <h2><span class="dot"></span>Wallet</h2>
+          <div class="wallet-big"><span id="walletBal">0</span> <small>FRG</small></div>
+          <div class="wallet-sub">FRG is FlagForge's in-game token — play money on a closed loop. It never leaves the grid.</div>
+        </div>
+
+        <div class="panel">
+          <h2><span class="dot"></span>My rig — open ports &amp; firewall</h2>
+          <div style="font-size:.78rem;color:var(--dim);margin-bottom:.55rem">Your machine on the grid: <b style="color:#eafff2">operator rig</b> · IP <b style="color:var(--cyan)">10.13.0.2</b> · subnet 10.13.0.0/24. Rivals reach you at that IP — and you reach them at theirs.</div>
+          <div class="rig" id="rigList"></div>
+          <div class="wallet-sub" style="margin-top:.55rem">Your rig started <b style="color:var(--amber)">blank — no firewall, no defenses</b>. There is no patch button: you defend it yourself in the terminal, like a real admin. Example: <code style="color:var(--cyan)">iptables -A INPUT -p tcp --dport 22 -j DROP</code> blocks SSH, or <code style="color:var(--cyan)">service smb stop</code> closes SMB. Attacks only bounce off doors you actually defended. Check anytime with <code style="color:var(--cyan)">forge-status</code>.</div>
+        </div>
+
+        <div class="panel">
+          <h2><span class="dot"></span>AI copilot — real commands, real code</h2>
+          <div class="aiout" id="aiOut">Ask me about a target and I'll give you real shell recon commands and a real Python exploit draft using the forge bridge.<br><br>Try: “how do I hack cryptrat?” or “write a python exploit for blackcipher”.</div>
+          <button class="btn queuebtn" id="queueBtn">Queue</button>
+          <form class="airow" id="aiForm">
+            <input id="aiInput" type="text" placeholder="Describe the hack…" autocomplete="off" />
+            <button type="submit">Forge</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2><span class="dot"></span>Leaderboard</h2>
+          <table class="board"><tbody id="boardBody"></tbody></table>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ============ PROFILE ============ -->
+    <div class="poverlay hide" id="profileOverlay" role="dialog" aria-modal="true" aria-label="Operator profile">
+      <div class="pcard">
+        <div class="pbanner" id="profBanner">
+          <div class="bglayer bg-static-matrix" id="profBgLayer"></div>
+          <button class="pclose" id="profClose" type="button">✕ Close</button>
+        </div>
+        <div class="pbody">
+          <div class="phead">
+            <div class="pava" id="profAvatar">?</div>
+            <div>
+              <div class="pname" id="profName">—</div>
+              <div class="psub" id="profSub">—</div>
+            </div>
+          </div>
+          <p class="pbio" id="profBio"></p>
+          <div class="pstats">
+            <div class="pstat"><b id="profHacks">0</b><span>SUCCESSFUL HACKS</span></div>
+            <div class="pstat hacked"><b id="profHacked">0</b><span>TIMES HACKED</span></div>
+            <div class="pstat kd"><b id="profKD">0.00</b><span>K/D · HACKS ÷ HACKED</span></div>
+            <div class="pstat frg"><b id="profFRG">0</b><span>FRG WALLET</span></div>
+          </div>
+          <div class="psec">MEDIA</div>
+          <div class="pmedia" id="profMedia"></div>
+
+          <div class="pedit" id="profEdit">
+            <div class="psec" style="margin-top:0">EDIT YOUR PROFILE</div>
+            <label for="editBio">BIO</label>
+            <textarea id="editBio" maxlength="240" placeholder="Tell the grid who you are…"></textarea>
+            <label>PROFILE PICTURE — upload a photo, or pick a color for your initial</label>
+            <input type="file" id="editAvatarFile" accept="image/*" />
+            <img id="avaPreview" alt="New profile picture preview" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--grn);margin-top:.45rem" />
+            <div class="swatches" id="avaColors" style="margin-top:.5rem"></div>
+            <label>BACKGROUND — STATIC</label>
+            <div class="swatches" id="bgStaticSw"></div>
+            <label>BACKGROUND — LIVE (ANIMATED)</label>
+            <div class="swatches" id="bgLiveSw"></div>
+            <label for="editBgFile">OR UPLOAD YOUR OWN LIVE BACKGROUND — a video, GIF or animated WebP from your device</label>
+            <input type="file" id="editBgFile" accept="video/*,image/gif,image/webp,image/apng" />
+            <div class="bgprev" id="bgPreview"><span id="bgPreviewLbl">PREVIEW</span></div>
+            <label for="editMediaFiles">ADD MEDIA — photos for your gallery</label>
+            <input type="file" id="editMediaFiles" accept="image/*" multiple />
+            <div class="medthumbs" id="medThumbs"></div>
+            <div class="pfoot">
+              <button class="btn" id="profSaveBtn" type="button">Save profile</button>
+              <span style="font-size:.7rem;color:var(--faint);align-self:center">Uploads preview first — nothing applies until you save. Your profile and media live for this session on this device.</span>
+            </div>
+          </div>
+
+          <div class="pfoot">
+            <button class="btn ghost" id="profTargetBtn" type="button" style="display:none">◎ Target this rig</button>
+            <button class="btn" id="profDoneBtn" type="button">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="foot">FlagForge v0.2 — real Linux VM (v86 + Linux kernel, Buildroot/BusyBox userland), real CPython via Pyodide with real PyPI packages via micropip, and real C++ compiled by g++ on Compiler Explorer in your own browser tab with the output pasted back into the game. Rival operators are simulated on this device; FRG is play money with no real-world value and no cash-out.</p>
+
+    <script>
+      "use strict";
+      /* ================= DATA ================= */
+      var MODULES = {
+        ssh:  { mod: "hydra-spray",  desc: "credential spray against SSH auth" },
+        http: { mod: "sqli-siphon", desc: "SQL injection dump over HTTP" },
+        ftp:  { mod: "anon-pounce", desc: "anonymous-login bounce into FTP root" },
+        smb:  { mod: "smb-relay",   desc: "NTLM relay across SMB shares" },
+        smtp: { mod: "smtp-spoof",  desc: "spoofed internal mail → shell drop" }
+      };
+      var MOD2SVC = {};
+      Object.keys(MODULES).forEach(function (s) { MOD2SVC[MODULES[s].mod] = s; });
+      var VULN_HINT = {
+        ssh:  "sshd[214]: PasswordAuthentication ENABLED for root — weak credential policy",
+        http: "httpd[187]: /admin debug endpoint exposed — SQL debug ON, queries logged unsanitized",
+        ftp:  "vsftpd[156]: anonymous_enable=YES — anonymous login allowed, upload perms loose",
+        smb:  "smbd[201]: SMB1 enabled, NTLM relay protection OFF — signing not required",
+        smtp: "postfix[173]: mynetworks trusts 10.13.0.0/24 — internal spoofing accepted, no SPF check"
+      };
+      function T(id, host, op, ip, x, y, wallet, tier, services, vuln, flag) {
+        return { id: id, host: host, op: op, ip: ip, x: x, y: y, wallet: wallet, tier: tier,
+                 services: services, vuln: vuln, alert: 0, downUntil: 0, scanned: false,
+                 flag: flag, captured: false };
+      }
+      var targets = [
+        T("t1", "darkvault",   "vex",   "10.13.0.7",  0.16, 0.20, 420,  "T1", ["ssh", "http"],  "ssh",  "FLAG{darkvault_9f3ac2}"),
+        T("t2", "nullbyte",    "m0ss",  "10.13.0.12", 0.84, 0.16, 260,  "T1", ["ftp", "http"],  "ftp",  "FLAG{nullbyte_41bd07}"),
+        T("t3", "cryptrat",    "jinxx", "10.13.0.21", 0.13, 0.76, 610,  "T2", ["smb", "ssh"],   "smb",  "FLAG{cryptrat_77e0d9}"),
+        T("t4", "ghostline",   "orla",  "10.13.0.33", 0.86, 0.72, 180,  "T1", ["http", "smtp"], "http", "FLAG{ghostline_2c58aa}"),
+        T("t5", "ironpetal",   "kade",  "10.13.0.44", 0.34, 0.82, 890,  "T2", ["ssh", "smtp"],  "smtp", "FLAG{ironpetal_b6d314}"),
+        T("t6", "blackcipher", "sable", "10.13.0.66", 0.62, 0.08, 1250, "T3", ["http", "smb", "ssh"], "http", "FLAG{blackcipher_05f9e1}")
+      ];
+      var state = {
+        started: false, handle: "guest", balance: 0, flags: 0, status: "online",
+        selected: null, loans: 0, attack: null,
+        services: { ssh: { patchedUntil: 0 }, http: { patchedUntil: 0 }, smb: { patchedUntil: 0 } },
+        stats: { hacks: 0, hacked: 0 },
+        profile: { bio: "", avatarImg: null, avatarColor: "#17c964", bgMode: "static", bg: "matrix", customBg: null, media: [] }
+      };
+      var PATCH_COST = 25, PATCH_MS = 120000, REACTIVATE_COST = 100, ATTACK_WINDOW = 12000;
+      var PLAYER_IP = "10.13.0.2", PLAYER_HOST = "operator rig", GRID_SUBNET = "10.13.0.0/24";
+
+      /* ---------- operator profiles & lifetime stats (rivals) ---------- */
+      function MTile(label, bg) { return { tile: true, label: label, bg: bg }; }
+      var RIVAL_PROFILES = {
+        vex:   { bio: "Vaults are just doors that haven't met me yet. SSH is my love language.", color: "#ff4d5e", bgMode: "live", bg: "rain",
+                 hacks: 14, hacked: 6, media: [MTile("rig: darkvault", "linear-gradient(135deg,#1c050a,#3d0d18)"), MTile("last score: 420 FRG", "linear-gradient(135deg,#0a2e18,#04150b)"), MTile("night ops", "linear-gradient(135deg,#03141c,#0a2e3d)")] },
+        m0ss:  { bio: "Anonymous FTP enjoyer. If it uploads, it belongs to everyone.", color: "#ffb340", bgMode: "static", bg: "amber",
+                 hacks: 9, hacked: 11, media: [MTile("rig: nullbyte", "linear-gradient(135deg,#191003,#3a2708)"), MTile("share everything", "linear-gradient(135deg,#0a2e18,#191003)"), MTile("seedbox diaries", "linear-gradient(135deg,#12040a,#3a2708)")] },
+        jinxx: { bio: "SMB relay go brrr. Signing is off and so am I — into your shares.", color: "#39d5e8", bgMode: "live", bg: "scan",
+                 hacks: 17, hacked: 8, media: [MTile("rig: cryptrat", "linear-gradient(135deg,#03141c,#0a2e3d)"), MTile("relay station", "linear-gradient(135deg,#04150b,#0a2e3d)"), MTile("share hunter", "linear-gradient(135deg,#1c050a,#03141c)")] },
+        orla:  { bio: "I read other people's debug logs for fun. Yours had a door in it.", color: "#c9f5dd", bgMode: "static", bg: "abyss",
+                 hacks: 6, hacked: 9, media: [MTile("rig: ghostline", "linear-gradient(135deg,#03141c,#0a2e3d)"), MTile("ghost protocol", "linear-gradient(135deg,#04070a,#0a2e18)"), MTile("log whisperer", "linear-gradient(135deg,#0a2e3d,#12040a)")] },
+        kade:  { bio: "Mail comes from inside the house. SPF is a suggestion.", color: "#2bff88", bgMode: "live", bg: "pulse",
+                 hacks: 21, hacked: 13, media: [MTile("rig: ironpetal", "linear-gradient(135deg,#04150b,#0f4d27)"), MTile("trusted sender", "linear-gradient(135deg,#191003,#04150b)"), MTile("inbox zero (yours)", "linear-gradient(135deg,#07202c,#04150b)")] },
+        sable: { bio: "Three services, zero regrets. The grid's final exam — bring numpy.", color: "#9d7bff", bgMode: "static", bg: "crimson",
+                 hacks: 28, hacked: 10, media: [MTile("rig: blackcipher", "linear-gradient(135deg,#1c050a,#2a0d2e)"), MTile("the big wallet", "linear-gradient(135deg,#3a2708,#1c050a)"), MTile("endgame", "linear-gradient(135deg,#03141c,#2a0d2e)")] }
+      };
+      targets.forEach(function (t) {
+        var p = RIVAL_PROFILES[t.op] || { bio: "", color: "#17c964", bgMode: "static", bg: "matrix", hacks: 0, hacked: 0, media: [] };
+        t.profile = p;
+        t.stats = { hacks: p.hacks, hacked: p.hacked };
+      });
+      var BG_STATIC = ["void", "matrix", "crimson", "abyss", "amber"];
+      var BG_LIVE = ["pulse", "rain", "scan"];
+      var AVA_COLORS = ["#17c964", "#39d5e8", "#ffb340", "#ff4d5e", "#9d7bff", "#c9f5dd"];
+
+      /* ================= HELPERS / TERMINAL PRINT ================= */
+      function $(id) { return document.getElementById(id); }
+      function now() { return Date.now(); }
+      function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+      function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      function fmt(n) { return n.toLocaleString("en-US"); }
+      function stripAnsi(s) { return String(s).replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "").replace(/\x1b\][^\x07]*\x07/g, ""); }
+
+      var out = $("termOut");
+      function print(text, cls) {
+        var d = document.createElement("div");
+        d.className = "l" + (cls ? " " + cls : "");
+        d.textContent = text;
+        out.appendChild(d);
+        while (out.childNodes.length > 900) out.removeChild(out.firstChild);
+        out.scrollTop = out.scrollHeight;
+      }
+      function findTarget(q) {
+        if (!q) return null;
+        q = String(q).toLowerCase().replace(/^@/, "").trim();
+        for (var i = 0; i < targets.length; i++) {
+          var t = targets[i];
+          if (t.host === q || t.op === q || t.ip === q || t.id === q) return t;
+        }
+        return null;
+      }
+      function isDown(t) { return t.downUntil > now(); }
+      function patched(svc) { return state.services[svc] && state.services[svc].patchedUntil > now(); }
+
+      /* ================= UI RENDER (map / board / targets / rig) ================= */
+      function renderStats() {
+        $("chipBal").textContent = fmt(state.balance) + " FRG";
+        $("walletBal").textContent = fmt(state.balance);
+        $("chipFlags").textContent = state.flags;
+        var cs = $("chipStatus");
+        if (state.status === "online") { cs.className = "chip status-on"; $("chipStatusTxt").textContent = "ONLINE"; }
+        else { cs.className = "chip status-off"; $("chipStatusTxt").textContent = "COMPROMISED"; }
+        var all = operators().slice().sort(function (a, b) { return b.bal - a.bal; });
+        for (var i = 0; i < all.length; i++) if (all[i].me) { $("chipRank").textContent = "#" + (i + 1); break; }
+        $("breachPanel").className = "breach" + (state.status === "compromised" ? " show" : "");
+        $("loanBtn").style.display = (state.status === "compromised" && state.balance < REACTIVATE_COST && state.loans < 3) ? "" : "none";
+        $("reactivateBtn").disabled = state.balance < REACTIVATE_COST;
+      }
+      function operators() {
+        var list = targets.map(function (t) { return { name: t.op, host: t.host, ip: t.ip, bal: t.wallet, me: false, down: isDown(t), tgt: t }; });
+        list.push({ name: state.handle, host: "your rig", ip: PLAYER_IP, bal: state.balance, me: true, down: state.status !== "online", tgt: null });
+        return list;
+      }
+      function renderBoard() {
+        var all = operators().slice().sort(function (a, b) { return b.bal - a.bal; });
+        var tb = $("boardBody"); tb.innerHTML = "";
+        all.forEach(function (o, i) {
+          var tr = document.createElement("tr");
+          if (o.me) tr.className = "me"; else if (o.down) tr.className = "out";
+          tr.title = "Open " + o.name + "'s profile — hacks, times hacked, K/D";
+          tr.innerHTML = "<td class='rk'>" + (i + 1) + "</td><td class='who'>" + esc(o.name) +
+            " <span style='color:var(--faint);font-weight:400'>· " + esc(o.host) + " · " + esc(o.ip) + (o.down ? " · OFFLINE" : "") + "</span></td>" +
+            "<td class='amt'>" + fmt(o.bal) + "</td>";
+          tr.addEventListener("click", function () { openProfile(o.me ? "me" : o.tgt); });
+          tb.appendChild(tr);
+        });
+      }
+      function renderTargets() {
+        var wrap = $("targetList"); wrap.innerHTML = "";
+        targets.forEach(function (t) {
+          var row = document.createElement("div");
+          row.className = "tgtrow";
+          var b = document.createElement("button");
+          b.className = "tgt" + (state.selected === t.id ? " sel" : "") + (isDown(t) ? " down" : "");
+          b.innerHTML = "<span class='pip'></span><span><span class='nm'>" + esc(t.host) + "</span>" +
+            "<span class='meta'>" + esc(t.ip) + " · op: " + esc(t.op) + (t.scanned ? " · services: " + t.services.join(", ") : " · unscanned — dig in /targets/" + t.host) + "</span></span>" +
+            "<span class='tier'>" + t.tier + "</span><span class='bal'>" + fmt(t.wallet) + " FRG</span>";
+          b.addEventListener("click", function () { selectTarget(t.id, true); });
+          var pb = document.createElement("button");
+          pb.className = "tgtprof"; pb.type = "button"; pb.textContent = "👤";
+          pb.title = "Open " + t.op + "'s profile — bio, media, hacks / hacked / K-D";
+          pb.setAttribute("aria-label", "Open profile of " + t.op);
+          pb.addEventListener("click", function () { openProfile(t); });
+          row.appendChild(b); row.appendChild(pb);
+          wrap.appendChild(row);
+        });
+      }
+      var PORTS = { ssh: 22, http: 80, smb: 445 };
+      function renderRig() {
+        var wrap = $("rigList"); wrap.innerHTML = "";
+        Object.keys(PORTS).forEach(function (svc) {
+          var row = document.createElement("div");
+          var under = state.attack && state.attack.service === svc;
+          var def = (typeof isDefended === "function") ? isDefended(svc) : false;
+          row.className = "svc" + (under ? " under" : "");
+          var st, cls = "";
+          if (under) { st = def ? "UNDER ATTACK — defended, should hold" : "UNDER ATTACK — OPEN!"; cls = "hot"; }
+          else if (def) { st = "DEFENDED — " + defenseReason(svc); cls = "ok"; }
+          else st = "OPEN — no defense on this door";
+          row.innerHTML = "<span class='nm'>" + svc.toUpperCase() + "</span><span class='st " + cls + "'>port " + PORTS[svc] + " · " + st + "</span>";
+          wrap.appendChild(row);
+        });
+        var rules = document.createElement("div");
+        rules.style.cssText = "font-size:.72rem;color:var(--faint);border:1px dashed var(--line2);padding:.45rem .6rem";
+        if (typeof defense !== "undefined" && defense.rules.length) {
+          rules.innerHTML = "<b style='color:var(--grn)'>ACTIVE FIREWALL / DEFENSES:</b><br>" + defense.rules.map(function (r) { return "• " + esc(r); }).join("<br>");
+        } else {
+          rules.innerHTML = "NO FIREWALL RULES — you are wide open. In the terminal: <span style='color:var(--cyan)'>iptables -A INPUT -p tcp --dport 22 -j DROP</span>";
+        }
+        wrap.appendChild(rules);
+      }
+      function renderAll() { renderStats(); renderBoard(); renderTargets(); renderRig(); drawMap(); }
+      function selectTarget(id, announce) {
+        state.selected = id;
+        var t = targets.filter(function (x) { return x.id === id; })[0];
+        if (announce && t) print("[forge] target locked: " + t.host + " (" + t.ip + ") — op " + t.op + ", holds " + fmt(t.wallet) + " FRG. In the VM: ls -la /targets/" + t.host, "c-cyan");
+        renderTargets(); drawMap();
+      }
+
+      var canvas = $("netmap"), ctx = canvas.getContext("2d");
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var pulse = 0;
+      function sizeCanvas() {
+        var r = canvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(300, Math.round(r.width * dpr));
+        canvas.height = Math.round(300 * dpr);
+      }
+      function drawMap() {
+        if (!ctx || !canvas.width) return;
+        var W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = "rgba(43,255,136,.07)";
+        var step = W / 16;
+        for (var gx = step; gx < W; gx += step) for (var gy = step; gy < H; gy += step) ctx.fillRect(gx, gy, 2, 2);
+        var cx = W * 0.5, cy = H * 0.52;
+        targets.forEach(function (t, i) {
+          var x = t.x * W, y = t.y * H;
+          ctx.strokeStyle = isDown(t) ? "rgba(255,77,94,.35)" : "rgba(43,255,136,.28)";
+          ctx.setLineDash([5, 6]);
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+          ctx.setLineDash([]);
+          if (!reduced && !isDown(t)) {
+            var p = ((pulse / 1400) + i * 0.19) % 1;
+            ctx.fillStyle = "rgba(57,213,232,.9)";
+            ctx.beginPath(); ctx.arc(cx + (x - cx) * p, cy + (y - cy) * p, 3, 0, 7); ctx.fill();
+          }
+        });
+        ctx.fillStyle = state.status === "online" ? "#2bff88" : "#ff4d5e";
+        ctx.beginPath(); ctx.arc(cx, cy, 15, 0, 7); ctx.fill();
+        ctx.fillStyle = "#03130a"; ctx.font = "800 13px " + getComputedStyle(document.body).fontFamily;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("YOU", cx, cy);
+        ctx.fillStyle = "#6f9c84"; ctx.font = "11px " + getComputedStyle(document.body).fontFamily;
+        ctx.fillText(state.handle + " · " + PLAYER_IP, cx, cy + 26);
+        targets.forEach(function (t) {
+          var x = t.x * W, y = t.y * H, down = isDown(t);
+          ctx.fillStyle = down ? "#3a1218" : "#0d2417";
+          ctx.strokeStyle = state.selected === t.id ? "#2bff88" : (down ? "#ff4d5e" : "#17c964");
+          ctx.lineWidth = state.selected === t.id ? 3 : 1.5;
+          ctx.beginPath(); ctx.arc(x, y, 17, 0, 7); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = down ? "#ff4d5e" : "#2bff88";
+          ctx.font = "800 12px " + getComputedStyle(document.body).fontFamily;
+          ctx.fillText(down ? "✕" : "▣", x, y);
+          ctx.fillStyle = "#c9f5dd"; ctx.font = "600 11px " + getComputedStyle(document.body).fontFamily;
+          ctx.fillText(t.host, x, y + 29);
+          ctx.fillStyle = "#6f9c84"; ctx.font = "10px " + getComputedStyle(document.body).fontFamily;
+          ctx.fillText(t.ip, x, y + 42);
+        });
+      }
+      function mapLoop(ts) { pulse = ts || 0; drawMap(); if (!reduced) requestAnimationFrame(mapLoop); }
+      canvas.addEventListener("click", function (e) {
+        var r = canvas.getBoundingClientRect();
+        var mx = (e.clientX - r.left) / r.width, my = (e.clientY - r.top) / r.height;
+        var best = null, bd = 0.09;
+        targets.forEach(function (t) { var d = Math.hypot(t.x - mx, (t.y - my) * 1.4); if (d < bd) { bd = d; best = t; } });
+        if (best) selectTarget(best.id, true);
+      });
+      window.addEventListener("resize", function () { sizeCanvas(); drawMap(); });
+
+      /* ================= DEFENSE LEDGER — built ONLY from real terminal commands ================= */
+      var SVC_BY_PORT = { 22: "ssh", 80: "http", 445: "smb", 21: "ftp", 25: "smtp" };
+      var SVC_ALIASES = { sshd: "ssh", ssh: "ssh", httpd: "http", apache: "http", apache2: "http", nginx: "http", http: "http", smbd: "smb", samba: "smb", smb: "smb", vsftpd: "ftp", ftp: "ftp", postfix: "smtp", smtp: "smtp" };
+      var defense = { blockedPorts: {}, defaultDeny: false, closed: {}, rules: [] };
+      var fileContents = {};   // files the player writes in the terminal: basename -> [lines]
+      var heredocState = null; // {file, marker, lines}
+      fileContents["example-defend.sh"] = [
+        "iptables -A INPUT -p tcp --dport 22 -j DROP",
+        "iptables -A INPUT -p tcp --dport 80 -j DROP",
+        "iptables -A INPUT -p tcp --dport 445 -j DROP"
+      ];
+      function addRule(desc) {
+        if (defense.rules.indexOf(desc) === -1) { defense.rules.push(desc); print("[defense] " + desc, "c-grn"); }
+        renderRig();
+      }
+      function isDefended(svc) {
+        return !!(defense.closed[svc] || defense.blockedPorts[PORTS[svc]] || defense.defaultDeny);
+      }
+      function defenseReason(svc) {
+        if (defense.closed[svc]) return "service stopped (port closed)";
+        if (defense.blockedPorts[PORTS[svc]]) return "firewall rule blocks port " + PORTS[svc];
+        if (defense.defaultDeny) return "default-deny firewall policy";
+        return "";
+      }
+      function blockPort(p, via) {
+        p = parseInt(p, 10);
+        if (!p) return;
+        defense.blockedPorts[p] = true;
+        addRule("firewall: port " + p + (SVC_BY_PORT[p] ? " (" + SVC_BY_PORT[p] + ")" : "") + " blocked via " + via);
+      }
+      function closeService(name, via) {
+        var svc = SVC_ALIASES[String(name).toLowerCase()];
+        if (!svc) return;
+        defense.closed[svc] = true;
+        addRule("service " + svc.toUpperCase() + " stopped via " + via + " — port " + (PORTS[svc] || "?") + " closed");
+      }
+      function parseDefenseLine(raw) {
+        var line = String(raw).trim();
+        var low = line.toLowerCase();
+        if (!low) return;
+        // running a script the player wrote? apply the rules inside it
+        var sm = low.match(/^(?:\.\/|sh\s+|bash\s+)(?:\S*\/)?([\w.-]+\.sh)\b/);
+        if (sm && fileContents[sm[1]]) {
+          print("[defense] running your script " + sm[1] + " — applying its rules…", "c-cyan");
+          fileContents[sm[1]].forEach(function (l) { parseDefenseLine(l); });
+          return;
+        }
+        if (low.indexOf("iptables") !== -1 || low.indexOf("nft") !== -1) {
+          if (/iptables\s+(-f|--flush)/.test(low) || /nft\s+flush/.test(low)) {
+            defense.blockedPorts = {}; defense.defaultDeny = false; defense.rules = defense.rules.filter(function (r) { return r.indexOf("service") === 0; });
+            print("[defense] firewall flushed — all port blocks removed. You are open again.", "c-red");
+            renderRig(); return;
+          }
+          if (/(-p\s+input\s+drop|--policy\s+input\s+drop|policy\s+drop)/.test(low)) {
+            defense.defaultDeny = true; addRule("firewall: default policy DROP — all incoming blocked (iptables/nft)"); return;
+          }
+          var dm = low.match(/(?:--dport|-dport|dport)\s+(\d+)/);
+          if (dm && /(drop|reject)/.test(low)) { blockPort(dm[1], low.indexOf("nft") !== -1 ? "nftables" : "iptables"); return; }
+          if (/(drop|reject)/.test(low) && /(input)/.test(low)) {
+            defense.defaultDeny = true; addRule("firewall: blanket INPUT DROP — all ports blocked"); return;
+          }
+        }
+        var um = low.match(/ufw\s+deny\s+(\d+)/);
+        if (um) { blockPort(um[1], "ufw"); return; }
+        var cm;
+        if ((cm = low.match(/systemctl\s+(?:stop|disable)\s+([\w.-]+)/))) { closeService(cm[1].replace(/\.service$/, ""), "systemctl"); return; }
+        if ((cm = low.match(/service\s+([\w.-]+)\s+(?:stop|disable)/))) { closeService(cm[1], "service"); return; }
+        if ((cm = low.match(/init\.d\/([\w.-]+)\s+stop/))) { closeService(cm[1], "init.d"); return; }
+        if ((cm = low.match(/(?:pkill|killall)\s+(?:-\S+\s+)?([\w.-]+)/))) { closeService(cm[1], "pkill"); return; }
+      }
+      function trackLineForFiles(raw) {
+        var line = String(raw);
+        if (heredocState) {
+          if (line.trim() === heredocState.marker) {
+            fileContents[heredocState.file] = heredocState.lines.slice();
+            print("[forge] saved " + heredocState.file + " (" + heredocState.lines.length + " lines) inside the VM. Run it with: sh " + heredocState.file, "c-faint");
+            heredocState = null;
+          } else heredocState.lines.push(line);
+          return true; // consumed as file content — not a command to defense-parse yet
+        }
+        var hm = line.match(/cat\s*>\s*(?:\S*\/)?([\w.-]+)\s*<<\s*['"]?(\w+)['"]?/);
+        if (hm) { heredocState = { file: hm[1], marker: hm[2], lines: [] }; return false; }
+        var em = line.match(/echo\s+['"]([^'"]+)['"]\s*>>?\s*(?:\S*\/)?([\w.-]+\.sh)\b/);
+        if (em) { var f = em[2]; fileContents[f] = fileContents[f] || []; fileContents[f].push(em[1]); }
+        return false;
+      }
+      function forgeStatus() {
+        print("YOUR RIG — " + PLAYER_HOST + " · IP " + PLAYER_IP + " · subnet " + GRID_SUBNET + " (rivals target you at this IP; you target them at theirs)", "c-cyan");
+        print("YOUR RIG — open ports & firewall (you built this; the machine started blank)", "c-white b");
+        Object.keys(PORTS).forEach(function (svc) {
+          var def = isDefended(svc);
+          print("  " + svc.toUpperCase().padEnd(5) + " port " + String(PORTS[svc]).padEnd(4) + (def ? "DEFENDED — " + defenseReason(svc) : "OPEN — anyone can walk in"), def ? "c-grn" : "c-red");
+        });
+        if (defense.rules.length) { print("  active defenses:", "c-dim"); defense.rules.forEach(function (r) { print("    • " + r, "c-dim"); }); }
+        else print("  no firewall rules yet. Start with: iptables -A INPUT -p tcp --dport 22 -j DROP", "c-amber");
+      }
+
+      /* ================= FORGE BRIDGE — shell / Python / C++ all land here ================= */
+      function captureFlag(t, via) {
+        if (state.status !== "online") { print("[forge] your rig is offline — reactivate before looting.", "c-red"); return null; }
+        var loot = Math.max(40, Math.round(t.wallet * 0.35));
+        if (!t.captured) { t.captured = true; state.flags++; }
+        state.stats.hacks++; t.stats.hacked++;
+        state.balance += loot; t.wallet -= loot;
+        t.downUntil = now() + 45000; t.alert = 0;
+        print("★ FLAG CAPTURED: " + t.flag + "  (" + via + ")", "c-grn b");
+        print("  drained " + fmt(loot) + " FRG from " + t.op + "'s wallet into yours. " + t.host + " crashed off the grid (~45s).", "c-amber");
+        renderAll();
+        return { flag: t.flag, loot_FRG: loot, new_balance: state.balance };
+      }
+      function bridgeScan(hostStr) {
+        var t = findTarget(hostStr);
+        if (!t) return { error: "unknown target '" + hostStr + "' — try: targets" };
+        if (isDown(t)) return { error: t.host + " is offline right now" };
+        t.scanned = true; renderAll();
+        return { host: t.host, ip: t.ip, operator: t.op, tier: t.tier, wallet_FRG: t.wallet,
+                 open_services: t.services.slice(),
+                 next_step: "read its logs in the VM: grep -Rni \"enabled\" /targets/" + t.host + "/logs/ — the misconfigured service is the one to exploit" };
+      }
+      function bridgeExploit(hostStr, modName) {
+        var t = findTarget(hostStr);
+        if (!t) return { error: "unknown target '" + hostStr + "'" };
+        if (!state.started) return { error: "claim your signup bonus first" };
+        if (state.status !== "online") return { error: "your rig is offline — reactivate first" };
+        if (isDown(t)) return { error: t.host + " is offline — no flag to take" };
+        var svc = MOD2SVC[String(modName || "").toLowerCase()];
+        if (!svc) return { error: "unknown module '" + modName + "' — run: modules" };
+        if (t.services.indexOf(svc) === -1) return { error: modName + " needs an open " + svc.toUpperCase() + " service — " + t.host + " doesn't expose one" };
+        if (svc === t.vuln) {
+          var res = captureFlag(t, "exploit " + modName + " vs " + svc.toUpperCase());
+          return { success: true, host: t.host, service: svc, result: res };
+        }
+        t.alert++;
+        var msg = "exploit fizzled: " + svc.toUpperCase() + " on " + t.host + " is properly configured. Alert " + t.alert + "/3.";
+        print("[forge] " + msg, "c-red");
+        if (t.alert >= 3) {
+          var others = t.services.filter(function (s) { return s !== t.vuln; });
+          t.vuln = others[Math.floor(Math.random() * others.length)];
+          t.alert = 0;
+          print("[forge] " + t.op + " patched the hole and rotated the weak service. Re-read the logs.", "c-amber");
+          syncTargetLogs(t);
+        }
+        renderAll();
+        return { success: false, host: t.host, service: svc, alert: t.alert, hint: "wrong door — re-read /targets/" + t.host + "/logs/" };
+      }
+      function processMarkers(text, source) {
+        var re = /@@(SCAN|EXPLOIT|WALLET)(?::([^@]*))?@@/g, m, guard = 0;
+        while ((m = re.exec(String(text))) && guard++ < 8) {
+          var arg = (m[2] || "").trim();
+          if (arg.indexOf("$") !== -1) continue; // setup echo of helper scripts
+          if (m[1] === "SCAN") {
+            var r1 = bridgeScan(arg);
+            print("[forge] scan " + arg + " → " + JSON.stringify(r1), r1.error ? "c-red" : "c-cyan");
+          } else if (m[1] === "EXPLOIT") {
+            var parts = arg.split(":");
+            var r2 = bridgeExploit(parts[0], parts[1]);
+            print("[forge] exploit " + arg + " → " + JSON.stringify(r2), r2.error || r2.success === false ? "c-red" : "c-grn");
+            if (r2.success && source === "vm" && vmReady) serialSend("cat /targets/" + parts[0] + "/.vault/flag.txt\n");
+          } else if (m[1] === "WALLET") {
+            print("[forge] wallet → " + state.balance + " FRG · flags: " + state.flags, "c-amber");
+          }
+        }
+      }
+      function detectFlags(text) {
+        if (!flagDetectOn || !state.started) return;
+        targets.forEach(function (t) {
+          if (!t.captured && String(text).indexOf(t.flag) !== -1 && !isDown(t)) {
+            print("[forge] that flag string is live — you pulled it out of " + t.host + " with real commands.", "c-cyan");
+            captureFlag(t, "flag file read in the VM");
+          }
+        });
+      }
+
+      /* ================= REAL LINUX VM (v86) ================= */
+      var emulator = null, vmReady = false, setupDone = false, flagDetectOn = false;
+      var promptSeen = false, emulatorReady = false, serialTail = "", serialChunk = "", flushTimer = null;
+      function setBoot(pct, stage, log) {
+        $("bootFill").style.width = Math.min(100, Math.round(pct)) + "%";
+        if (stage) $("bootStage").textContent = stage;
+        if (log) { var bl = $("bootLog"); bl.textContent = (bl.textContent + "\n" + log).split("\n").slice(-7).join("\n"); }
+      }
+      function serialSend(s) { if (emulator) { try { emulator.serial0_send(s); } catch (e) {} } }
+      function flushSerial() {
+        flushTimer = null;
+        if (!serialChunk) return;
+        var text = stripAnsi(serialChunk).replace(/\r/g, "");
+        serialChunk = "";
+        if (text) {
+          var d = document.createElement("div");
+          d.className = "l"; d.style.color = "#9fe8bb"; d.textContent = text;
+          out.appendChild(d);
+          while (out.childNodes.length > 900) out.removeChild(out.firstChild);
+          out.scrollTop = out.scrollHeight;
+          processMarkers(text, "vm");
+          detectFlags(text);
+        }
+      }
+      function onSerialByte(b) {
+        var ch = String.fromCharCode(b);
+        serialChunk += ch;
+        serialTail = (serialTail + ch).slice(-400);
+        if (!flushTimer) flushTimer = setTimeout(flushSerial, 60);
+        if (!promptSeen) {
+          if (/login:\s*$/i.test(serialTail)) { serialSend("root\n"); serialTail = ""; }
+          else if (/(~|[\w\/-])#\s*$/.test(serialTail) || /root@[\w-]+/.test(serialTail)) { promptSeen = true; onShellReady(); }
+        }
+      }
+      setInterval(function () { if (emulator && emulatorReady && !promptSeen) serialSend("\n"); }, 5000);
+
+      function sq(s) { return "'" + String(s).replace(/'/g, "") + "'"; }
+      function targetSetupLines(t) {
+        var base = "/targets/" + t.host, L = [];
+        L.push("mkdir -p " + base + "/logs " + base + "/.vault");
+        var svcLines = t.services.map(function (s) { return s.toUpperCase() + " port " + ({ ssh: 22, http: 80, ftp: 21, smb: 445, smtp: 25 })[s] + " open"; });
+        L.push("printf '%s\\n' " + svcLines.map(sq).join(" ") + " > " + base + "/services.txt");
+        L.push("printf '%s\\n' " + sq("operator: " + t.op) + " " + sq("host: " + t.host + " (" + t.ip + ")") + " " + sq("one of these services is misconfigured. the logs know which.") + " > " + base + "/notes.txt");
+        var logs = ["boot: services started: " + t.services.join(", ")];
+        t.services.forEach(function (s) {
+          if (s === t.vuln) logs.push(VULN_HINT[s].replace(/—/g, "-"));
+          else logs.push(s + "d: config check OK - hardened, no issues found");
+        });
+        logs.push("cron: nightly backup done");
+        L.push("printf '%s\\n' " + logs.map(sq).join(" ") + " > " + base + "/logs/app.log");
+        L.push("printf '%s\\n' " + sq(t.flag) + " > " + base + "/.vault/flag.txt");
+        L.push("chmod 600 " + base + "/.vault/flag.txt");
+        return L;
+      }
+      function syncTargetLogs(t) { targetSetupLines(t).forEach(function (l) { serialSend(l + "\n"); }); }
+      function setupLines() {
+        var L = ["mkdir -p /targets /etc/forge /root/work", "cd /root"];
+        targets.forEach(function (t) { L = L.concat(targetSetupLines(t)); });
+        L.push("printf '%s\\n' '#!/bin/sh' 'echo \"@@SCAN:$1@@\"' > /usr/local/bin/forge-scan");
+        L.push("printf '%s\\n' '#!/bin/sh' 'echo \"@@EXPLOIT:$1:$2@@\"' > /usr/local/bin/forge-exploit");
+        L.push("printf '%s\\n' '#!/bin/sh' 'R=/etc/forge/firewall.rules; touch $R; case \"$1\" in -L|-S|--list) echo \"Chain INPUT (policy ACCEPT)\"; cat $R;; -F) : > $R; echo \"firewall flushed\";; *) echo \"$*\" >> $R; echo \"rule recorded: $*\";; esac' > /usr/local/bin/iptables");
+        L.push("printf '%s\\n' '#!/bin/sh' 'echo \"$1 $2\" >> /etc/forge/services.state; echo \"$1: $2 (recorded on your rig)\"' > /usr/local/bin/service");
+        L.push("printf '%s\\n' '#!/bin/sh' 'cp /usr/local/bin/iptables /usr/local/bin/nft; echo copied' > /tmp/mknft.sh");
+        L.push("chmod +x /usr/local/bin/forge-scan /usr/local/bin/forge-exploit /usr/local/bin/iptables /usr/local/bin/service");
+        L.push("printf '%s\\n' 'iptables -A INPUT -p tcp --dport 22 -j DROP' 'iptables -A INPUT -p tcp --dport 80 -j DROP' 'iptables -A INPUT -p tcp --dport 445 -j DROP' > /root/example-defend.sh");
+        var readme = [
+          "FlagForge rig - this is a REAL Linux machine. Everything you know works here.",
+          "RECON:  ls -la /targets    cat /targets/darkvault/services.txt",
+          "        grep -Rni enabled /targets/*/logs/    find /targets -name flag.txt",
+          "EXPLOIT: forge-scan darkvault   then   forge-exploit darkvault hydra-spray",
+          "        (or write Python / C++ in the Code Lab - same bridge, your own code)",
+          "DEFENSE: your rig started BLANK. No firewall. No locks. Build them:",
+          "        iptables -A INPUT -p tcp --dport 22 -j DROP     (bouncer on door 22)",
+          "        service smb stop                                (close a door)",
+          "        sh /root/example-defend.sh                      (a script that does all 3)",
+          "        cat /etc/forge/firewall.rules                   (see your rules)",
+          "Check your doors any time with: forge-status"
+        ];
+        L.push("printf '%s\\n' " + readme.map(sq).join(" ") + " > /root/README.txt");
+        L.push("echo 'rig ready: 6 targets planted in /targets'");
+        return L;
+      }
+      async function onShellReady() {
+        if (setupDone) return;
+        setBoot(82, "Shell is live — planting rival rigs as real files in /targets…");
+        var lines = setupLines();
+        for (var i = 0; i < lines.length; i++) { serialSend(lines[i] + "\n"); await sleep(85); }
+        await sleep(900);
+        setupDone = true; vmReady = true;
+        setBoot(100, "Linux VM ready.");
+        $("vmPill").textContent = "VM: LINUX READY · real shell";
+        $("vmPill").className = "vmpill ready";
+        setTimeout(function () { flagDetectOn = true; }, 1200);
+        setTimeout(function () { $("bootOverlay").className = "boot hide"; }, 500);
+        out.innerHTML = "";
+        print("Linux (Buildroot/BusyBox) on v86 — a real x86 PC emulated in your browser.", "c-faint");
+        print("This shell is real: ls, cd, cat, grep, find, awk, sed, vi, sh — and every skill transfers to real machines.", "c-dim");
+        print("Rival rigs are real folders:  ls -la /targets   ·   start with:  cat /root/README.txt", "c-cyan");
+        print("Your own rig started BLANK — no firewall, no locks. First defense:  iptables -A INPUT -p tcp --dport 22 -j DROP", "c-amber");
+        if (state.started) print("Grid is live, " + state.handle + ". Go take a flag.", "c-grn");
+      }
+      function initVM() {
+        if (typeof V86 === "undefined") {
+          setBoot(100, "v86 failed to load from CDN — grid panels still work; reload to retry the VM.");
+          $("vmPill").textContent = "VM: FAILED TO LOAD"; $("vmPill").className = "vmpill dead";
+          setTimeout(function () { $("bootOverlay").className = "boot hide"; }, 3500);
+          print("VM emulator failed to load (network/CDN). Game commands below still work; shell commands need the VM — reload the page.", "c-red");
+          return;
+        }
+        setBoot(12, "Downloading Linux kernel image (~10 MB)…");
+        try {
+          emulator = new V86({
+            wasm_path: "https://cdn.jsdelivr.net/npm/v86@0.5.472/build/v86.wasm",
+            memory_size: 128 * 1024 * 1024,
+            vga_memory_size: 2 * 1024 * 1024,
+            screen_container: $("screen_container"),
+            bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin" },
+            vga_bios: { url: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin" },
+            bzimage: { url: "https://i.copy.sh/buildroot-bzimage68.bin" },
+            autostart: true,
+            disable_keyboard: true,
+            disable_mouse: true
+          });
+        } catch (e) {
+          setBoot(100, "VM failed to start: " + e.message);
+          $("vmPill").textContent = "VM: ERROR"; $("vmPill").className = "vmpill dead";
+          return;
+        }
+        emulator.add_listener("download-progress", function (e) {
+          if (e && e.total) setBoot(12 + 55 * (e.loaded / e.total), "Downloading VM files… " + Math.round(100 * e.loaded / e.total) + "% of current file");
+        });
+        emulator.add_listener("emulator-ready", function () {
+          emulatorReady = true;
+          setBoot(72, "CPU running — Linux kernel booting (watch the terminal)…");
+        });
+        emulator.add_listener("serial0-output-byte", onSerialByte);
+        setTimeout(function () {
+          if (!setupDone) setBoot(90, "Still booting — big kernels take a moment on emulated hardware…");
+        }, 45000);
+      }
+
+      /* ================= TERMINAL INPUT ROUTING ================= */
+      var cmdHistory = [], hIdx = -1;
+      function forgeHelp() {
+        print("FLAGFORGE — real terminal, real hacking (same commands & ideas as real life)", "c-white b");
+        print("  REAL SHELL   everything else you type goes to the real Linux VM: ls, cd, cat, grep, find, awk, sed, vi, sh…", "c-dim");
+        print("  ls -la /targets            rival rigs as real folders", "c-dim");
+        print("  forge-scan <host>          (in VM) reveal a rig's open services", "c-dim");
+        print("  forge-exploit <host> <mod> (in VM) fire the module that matches the weak service", "c-dim");
+        print("  py: <python code>          run real Python inline — import forge first", "c-dim");
+        print("  C++ paste-back             paste a compiled program's output line (with @@ markers) right here and the grid acts on it", "c-dim");
+        print("  DEFEND YOURSELF (your rig started blank — build these for real):", "c-white");
+        print("  iptables -A INPUT -p tcp --dport 22 -j DROP   bouncer on the ssh door", "c-dim");
+        print("  service smb stop           close a door you don't need", "c-dim");
+        print("  forge-status               your open ports + active firewall rules", "c-dim");
+        print("  GAME: targets · modules · wallet · leaderboard · reactivate · clear", "c-dim");
+        print("  IPs: every rig has one (yours: " + PLAYER_IP + ") — target by name OR IP: forge-exploit 10.13.0.7 hydra-spray · forge.scan('10.13.0.7')", "c-dim");
+        print("  profile [host|ip]         open an operator profile (bio, media, hacks / hacked / K-D) — no arg = yours", "c-dim");
+      }
+      function runTerminalLine(raw) {
+        var line = String(raw || "").trim();
+        if (!line) return;
+        // Paste-back: a line pasted from a C++ program's real output carries
+        // forge markers — parse it exactly like live program output.
+        if (line.indexOf("@@") !== -1 && /@@(SCAN|EXPLOIT|WALLET)/.test(line)) {
+          cmdHistory.unshift(line); hIdx = -1;
+          print(state.handle + "@forge:~$ " + line, "c-faint");
+          print("[paste] output pasted into the terminal — reading its forge markers:", "c-cyan");
+          processMarkers(line, "code");
+          return;
+        }
+        cmdHistory.unshift(line); hIdx = -1;
+        var wasHeredoc = trackLineForFiles(line);
+        if (!wasHeredoc && !heredocState) parseDefenseLine(line);
+        var parts = line.split(/\s+/), cmd = parts[0].toLowerCase(), args = parts.slice(1);
+        function echo() { print(state.handle + "@forge:~$ " + line, "c-faint"); }
+        if (cmd === "forge-help" || cmd === "help") { echo(); forgeHelp(); return; }
+        if (cmd === "clear") { out.innerHTML = ""; return; }
+        if (cmd === "targets") { echo(); targets.forEach(function (t) { print("  " + t.host.padEnd(12) + " " + t.ip.padEnd(11) + " op:" + t.op.padEnd(7) + (isDown(t) ? "OFFLINE" : fmt(t.wallet) + " FRG") + "  " + t.tier + (t.scanned ? "  [" + t.services.join(", ") + "]" : "  [unscanned — /targets/" + t.host + "]"), isDown(t) ? "c-faint" : "c-dim"); }); return; }
+        if (cmd === "modules") { echo(); Object.keys(MODULES).forEach(function (s) { print("  " + MODULES[s].mod.padEnd(13) + " → " + s.toUpperCase().padEnd(5) + " port " + ({ ssh: 22, http: 80, ftp: 21, smb: 445, smtp: 25 })[s] + " · " + MODULES[s].desc, "c-dim"); }); return; }
+        if (cmd === "wallet") { echo(); print("wallet: " + fmt(state.balance) + " FRG · flags captured: " + state.flags, "c-amber"); return; }
+        if (cmd === "leaderboard") { echo(); operators().slice().sort(function (a, b) { return b.bal - a.bal; }).forEach(function (o, i) { print("  " + (i + 1) + ". " + o.name.padEnd(10) + fmt(o.bal) + " FRG" + (o.me ? "  ← you" : ""), o.me ? "c-grn" : "c-dim"); }); return; }
+        if (cmd === "forge-status" || cmd === "status") { echo(); forgeStatus(); return; }
+        if (cmd === "scan" || cmd === "forge-scan") { echo(); var r = bridgeScan(args[0]); print(JSON.stringify(r, null, 1), r.error ? "c-red" : "c-cyan"); return; }
+        if (cmd === "exploit" || cmd === "forge-exploit" || cmd === "hack") { echo(); var r2 = bridgeExploit(args[0], args[1]); print(JSON.stringify(r2, null, 1), (r2.error || r2.success === false) ? "c-red" : "c-grn"); return; }
+        if (cmd === "patch") {
+          echo();
+          var svc = (args[0] || "ssh").toLowerCase(), port = PORTS[svc] || 22;
+          print("No one-click patching on this grid — your rig is a real machine and you defend it like one:", "c-amber");
+          print("  bouncer on the door:  iptables -A INPUT -p tcp --dport " + port + " -j DROP", "c-cyan");
+          print("  or close the door:    service " + svc + " stop", "c-cyan");
+          print("Type one of those for real and it counts. Check with forge-status.", "c-dim");
+          return;
+        }
+        if (cmd === "reactivate") { echo(); reactivate(); return; }
+        if (cmd === "profile") {
+          echo();
+          if (!args[0]) { openProfile("me"); print("[profile] your profile is open — bio, picture, backgrounds (even your own uploaded live one), media, and your hacks / hacked / K-D.", "c-cyan"); return; }
+          var pt = findTarget(args[0]);
+          if (pt) { openProfile(pt); print("[profile] " + pt.op + " @ " + pt.host + " (" + pt.ip + ") — hacks " + pt.stats.hacks + " · hacked " + pt.stats.hacked + " · K/D " + kdStr(pt.stats), "c-cyan"); }
+          else print("no operator matches '" + args[0] + "' — try a hostname, operator name, or IP from: targets", "c-red");
+          return;
+        }
+        if (cmd === "whoami") { echo(); print(state.handle + " — operator, FlagForge grid season 01. IP " + PLAYER_IP + ".", "c-dim"); return; }
+        if (cmd === "py:" || cmd === "python" || cmd === "python3") {
+          var code = cmd === "py:" ? line.slice(3).trim() : args.join(" ");
+          if (!code) { echo(); print("Inline Python:  py: import forge; print(forge.scan('darkvault'))   — or use the Code Lab below for full scripts.", "c-amber"); return; }
+          runPython(code, "terminal");
+          return;
+        }
+        // everything else is a REAL shell command for the VM
+        if (!vmReady) { echo(); print("(VM still booting — that shell command will work once the boot screen clears. Game commands like targets/wallet/forge-status already work.)", "c-amber"); return; }
+        serialSend(line + "\n");
+      }
+      $("cmdForm").addEventListener("submit", function (e) { e.preventDefault(); var v = $("cmdInput").value; $("cmdInput").value = ""; runTerminalLine(v); });
+      $("cmdInput").addEventListener("keydown", function (e) {
+        if (e.key === "ArrowUp") { e.preventDefault(); if (hIdx < cmdHistory.length - 1) { hIdx++; $("cmdInput").value = cmdHistory[hIdx] || ""; } }
+        if (e.key === "ArrowDown") { e.preventDefault(); if (hIdx > 0) { hIdx--; $("cmdInput").value = cmdHistory[hIdx] || ""; } else { hIdx = -1; $("cmdInput").value = ""; } }
+      });
+      $("ctrlCBtn").addEventListener("click", function () { serialSend("\x03"); $("cmdInput").focus(); });
+      document.querySelectorAll(".qbtn").forEach(function (b) { b.addEventListener("click", function () { runTerminalLine(b.getAttribute("data-cmd")); $("cmdInput").focus(); }); });
+      $("termwrap").addEventListener("click", function (e) { if (e.target.tagName !== "BUTTON") $("cmdInput").focus(); });
+
+      /* ================= PYTHON — real CPython via Pyodide ================= */
+      var pyodide = null, pyPromise = null;
+      var FORGE_PY = [
+        "import js, json, sys, types",
+        "_f = types.ModuleType('forge')",
+        "def _scan(h): return json.loads(js.__forgeBridge.scan(h))",
+        "def _exploit(h, m): return json.loads(js.__forgeBridge.exploit(h, m))",
+        "def _wallet(): return int(js.__forgeBridge.wallet())",
+        "def _targets(): return json.loads(js.__forgeBridge.targets())",
+        "def _status(): return json.loads(js.__forgeBridge.status())",
+        "_f.scan=_scan; _f.exploit=_exploit; _f.wallet=_wallet; _f.targets=_targets; _f.status=_status",
+        "_f.__doc__='FlagForge bridge: scan(host), exploit(host, module), wallet(), targets(), status()'",
+        "sys.modules['forge']=_f"
+      ].join("\n");
+      window.__forgeBridge = {
+        scan: function (h) { return JSON.stringify(bridgeScan(h)); },
+        exploit: function (h, m) { return JSON.stringify(bridgeExploit(h, m)); },
+        wallet: function () { return String(state.balance); },
+        targets: function () { return JSON.stringify(targets.map(function (t) { return { host: t.host, ip: t.ip, operator: t.op, wallet_FRG: t.wallet, down: isDown(t) }; })); },
+        status: function () { return JSON.stringify({ defended: { ssh: isDefended("ssh"), http: isDefended("http"), smb: isDefended("smb") }, rules: defense.rules }); }
+      };
+      function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+      function ensurePyodide() {
+        if (pyodide) return Promise.resolve(pyodide);
+        if (pyPromise) return pyPromise;
+        $("engStat").innerHTML = "Engine: <b>loading CPython (Pyodide)…</b>";
+        pyPromise = loadScript("https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js").then(function () {
+          return loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/" });
+        }).then(function (py) {
+          pyodide = py;
+          py.setStdout({ batched: function (s) { print(s, "c-white"); processMarkers(s, "code"); } });
+          py.setStderr({ batched: function (s) { print(s, "c-red"); } });
+          // micropip = pip for Pyodide: installs real PyPI wheels in-browser,
+          // so `import micropip; await micropip.install("numpy")` works in scripts.
+          return py.loadPackage("micropip").catch(function () {}).then(function () {
+            return py.runPythonAsync(FORGE_PY);
+          }).then(function () {
+            $("engStat").innerHTML = "Engine: <b>CPython ready (Pyodide + micropip — PyPI installs work)</b>";
+            return py;
+          });
+        }).catch(function (e) { pyPromise = null; throw e; });
+        return pyPromise;
+      }
+      async function runPython(code, where) {
+        print("── python3 (" + (where || "code lab") + ") ──────────────────", "c-faint");
+        try {
+          var py = await ensurePyodide();
+          await py.runPythonAsync(code);
+        } catch (e) {
+          print("Python error: " + String(e && e.message ? e.message : e).split("\n").slice(-4).join("\n"), "c-red");
+        }
+        print("── done ────────────────────────────────", "c-faint");
+        out.scrollTop = out.scrollHeight;
+      }
+      /* Install real PyPI packages with micropip (same call scripts can make). */
+      async function installPyPackage(spec) {
+        var pkgs = String(spec || "").split(/[\s,]+/).map(function (s) { return s.trim(); })
+          .filter(function (s) { return /^[A-Za-z0-9._\-\[\]=<>!~'"]+$/.test(s); });
+        if (!pkgs.length) { print("pip: type a package name first — e.g. numpy, pandas, sympy.", "c-amber"); return; }
+        print("── pip install " + pkgs.join(" ") + " (micropip — real PyPI wheels) ──", "c-faint");
+        try {
+          var py = await ensurePyodide();
+          var list = pkgs.map(function (p) { return "'" + p.replace(/'/g, "") + "'"; }).join(", ");
+          await py.runPythonAsync("import micropip\nawait micropip.install([" + list + "])\nprint('installed OK — now just: import " + pkgs[0].split(/[<>=!~\[]/)[0].replace(/-/g, "_") + "')");
+          print("pip: done. The package stays importable for the rest of this session — in the Code Lab and in py: lines.", "c-grn");
+        } catch (e) {
+          print("pip error: " + String(e && e.message ? e.message : e).split("\n").slice(-4).join("\n"), "c-red");
+          print("pip: only packages with a browser-compatible (pure-Python or Pyodide) wheel can install here — numpy, pandas, sympy, requests all qualify.", "c-dim");
+        }
+        print("── done ────────────────────────────────", "c-faint");
+        out.scrollTop = out.scrollHeight;
+      }
+
+      /* ================= C++ — real g++, compiled by YOU in your own tab =================
+         This page makes NO request to any compiler service. The flow is:
+         1) copy the code, 2) compile + run it with real g++ on Compiler
+         Explorer in your own browser tab, 3) paste the program's output
+         back here (or into the terminal) — the forge markers in the pasted
+         output are parsed by processMarkers(), exactly as live output was. */
+      function runCpp(code) {
+        var lm = String(code).match(/\/\/\s*LINK:\s*([^\n]+)/);
+        print("── C++ (real g++ — compile in your own tab, paste output back) ──", "c-faint");
+        if (lm) print("reminder: your // LINK: line says " + lm[1].trim() + " — enter those flags in Compiler Explorer's compiler options.", "c-dim");
+        print("1) Hit 'Copy C++ code' in the Code Lab panel.", "c-cyan");
+        print("2) Open Compiler Explorer in a new tab, paste, pick g++, enable 'Execute the code'.", "c-cyan");
+        print("3) Copy the execution output and paste it into the paste box in the Code Lab (or right here in the terminal) — the @@ markers in it will fire on the grid.", "c-cyan");
+        copyCppCode(true);
+        var pp = $("cppPaste");
+        if (pp) pp.focus();
+        print("── waiting for pasted output ───────────", "c-faint");
+      }
+      function copyCppCode(silent) {
+        var code = $("codeEditor").value;
+        function done(ok) {
+          var st = $("copyCppStat");
+          if (st) st.innerHTML = ok ? "Code <b>copied</b> — paste it into Compiler Explorer." : "Copy failed — select the code in the editor and copy it manually.";
+          if (!silent) print(ok ? "[codelab] C++ code copied to clipboard." : "[codelab] clipboard copy failed — select the editor text and copy manually.", ok ? "c-grn" : "c-amber");
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(function () { done(true); }, function () { fallback(); });
+        } else fallback();
+        function fallback() {
+          try {
+            $("codeEditor").focus(); $("codeEditor").select();
+            done(document.execCommand && document.execCommand("copy"));
+          } catch (e) { done(false); }
+        }
+      }
+      function handlePastedOutput(text, where) {
+        var raw = String(text || "");
+        if (!raw.trim()) { print("[paste] nothing pasted yet — copy your program's output from Compiler Explorer first.", "c-amber"); return; }
+        print("── pasted program output (" + (where || "code lab") + ") ──", "c-faint");
+        raw.split(/\r?\n/).forEach(function (l) { if (l.length) print(l, "c-white"); });
+        if (!/@@(SCAN|EXPLOIT|WALLET)/.test(raw)) {
+          print("[paste] no forge markers found in that output. Your program needs to print lines like @@SCAN:darkvault@@ or @@EXPLOIT:darkvault:hydra-spray@@ — see the C++ template.", "c-amber");
+        }
+        processMarkers(raw, "code");
+        print("── done ────────────────────────────────", "c-faint");
+        out.scrollTop = out.scrollHeight;
+      }
+
+      /* ================= CODE LAB ================= */
+      var PY_TEMPLATE = [
+        "# Real Python (CPython) — the forge bridge talks to the live grid.",
+        "# Invent anything: loops, wordlists, automation, brand-new attacks.",
+        "# Libraries: the full standard library imports as-is, and real PyPI",
+        "# packages install with micropip — try the numpy example button above.",
+        "import forge, json",
+        "",
+        "print('my wallet:', forge.wallet(), 'FRG')",
+        "print('targets:', [t['host'] for t in forge.targets()])",
+        "",
+        "# recon first — same as a real hacker",
+        "info = forge.scan('darkvault')",
+        "print(json.dumps(info, indent=1))",
+        "",
+        "# its logs (in the VM: grep -Rni enabled /targets/darkvault/logs/) show SSH",
+        "# password auth left ON — so the ssh module is the right key:",
+        "result = forge.exploit('darkvault', 'hydra-spray')",
+        "print(result)"
+      ].join("\n");
+      var PY_NUMPY_TEMPLATE = [
+        "# ═══ LIBRARY EXAMPLE — Python + numpy (a real PyPI package) ═══",
+        "# micropip is pip for the browser: it downloads the real numpy wheel",
+        "# and installs it into this CPython, then `import numpy` just works.",
+        "# Same pattern for pandas: await micropip.install('pandas').",
+        "import micropip",
+        "await micropip.install('numpy')",
+        "",
+        "import numpy as np",
+        "import forge, json",
+        "",
+        "print('numpy version:', np.__version__)",
+        "",
+        "# recon through the forge bridge, as usual",
+        "info = forge.scan('darkvault')",
+        "print(json.dumps(info, indent=1))",
+        "",
+        "# ATTACK MATH with numpy: model a credential spray against SSH.",
+        "# 500 passwords in the wordlist, ~8 tries/sec before lockout risk.",
+        "tries = np.arange(1, 501)",
+        "eta = tries / 8.0",
+        "print('spray ETA, full list : %.1f s' % eta[-1])",
+        "print('median position ETA  : %.1f s' % float(np.median(eta)))",
+        "print('mean ETA %.1f s · spread (std) %.1f s' % (float(np.mean(eta)), float(np.std(eta))))",
+        "print('passwords tried by t=30s:', int(np.sum(eta <= 30)))",
+        "",
+        "# the math says it's fast — and darkvault's logs show SSH password",
+        "# auth left ON, so hydra-spray is the right key. Fire it:",
+        "print(forge.exploit('darkvault', 'hydra-spray'))",
+        "print('wallet now:', forge.wallet(), 'FRG')"
+      ].join("\n");
+      var CPP_TEMPLATE = [
+        "// Real C++ — you compile this with real g++ and actually run it:",
+        "// copy it, paste it into Compiler Explorer (button below), enable",
+        "// 'Execute the code', then paste the program's output back here.",
+        "// The forge bridge reads markers your program prints:",
+        "//   @@SCAN:host@@   @@EXPLOIT:host:module@@   @@WALLET@@",
+        "// Print them from YOUR logic — loops, tries, anything you invent.",
+        "// Libraries: #include any standard header; a // LINK: -lm line",
+        "// reminds you which flags to enter there. Try the example above.",
+        "#include <iostream>",
+        "#include <string>",
+        "int main() {",
+        "    std::cout << \"hello from real g++: \" << 6 * 7 << std::endl;",
+        "    std::string target = \"darkvault\";",
+        "    std::cout << \"@@SCAN:\" << target << \"@@\" << std::endl;",
+        "    // darkvault's logs show SSH password auth enabled -> ssh module",
+        "    std::cout << \"@@EXPLOIT:\" << target << \":hydra-spray@@\" << std::endl;",
+        "    std::cout << \"@@WALLET@@\" << std::endl;",
+        "    return 0;",
+        "}"
+      ].join("\n");
+      var CPP_LIB_TEMPLATE = [
+        "// ═══ LIBRARY EXAMPLE — C++ standard library headers + linking ═══",
+        "// #include pulls in real library code: containers, algorithms, math.",
+        "// The LINK line reminds you which flags to enter in Compiler",
+        "// Explorer's compiler options when you compile this there.",
+        "// LINK: -lm -pthread",
+        "#include <iostream>",
+        "#include <vector>",
+        "#include <algorithm>",
+        "#include <numeric>",
+        "#include <cmath>",
+        "#include <string>",
+        "",
+        "int main() {",
+        "    // A port-sweep timing model built from library calls:",
+        "    std::vector<int> ports = {445, 22, 3306, 80, 21, 443, 25};",
+        "    std::sort(ports.begin(), ports.end());              // <algorithm>",
+        "    double totalMs = 0;",
+        "    for (int p : ports) totalMs += 40.0 + 10.0 * std::log10(p + 10.0);  // <cmath>",
+        "    int checksum = std::accumulate(ports.begin(), ports.end(), 0);     // <numeric>",
+        "    std::cout << \"ports swept, sorted: \";",
+        "    for (int p : ports) std::cout << p << ' ';",
+        "    std::cout << \"\\nestimated sweep time: \" << totalMs << \" ms\"",
+        "              << \" (mean \" << totalMs / ports.size() << \" ms/port)\"",
+        "              << \"\\nport checksum: \" << checksum",
+        "              << \"\\njitter budget (sqrt of sweep): \" << std::sqrt(totalMs) << \" ms\\n\";",
+        "",
+        "    // now use the plan: recon + exploit through the forge bridge",
+        "    std::string target = \"darkvault\";",
+        "    std::cout << \"@@SCAN:\" << target << \"@@\" << std::endl;",
+        "    std::cout << \"@@EXPLOIT:\" << target << \":hydra-spray@@\" << std::endl;",
+        "    std::cout << \"@@WALLET@@\" << std::endl;",
+        "    return 0;",
+        "}"
+      ].join("\n");
+      var codeLang = "python", codeStore = { python: PY_TEMPLATE, cpp: CPP_TEMPLATE };
+      function setLang(lang) {
+        codeStore[codeLang] = $("codeEditor").value;
+        codeLang = lang;
+        $("codeEditor").value = codeStore[lang];
+        $("tabPy").className = "ctab" + (lang === "python" ? " sel" : "");
+        $("tabCpp").className = "ctab cpp" + (lang === "cpp" ? " sel" : "");
+        $("cppFlow").className = "cppflow" + (lang === "cpp" ? " show" : "");
+        $("runCodeBtn").textContent = lang === "cpp" ? "▶ Copy code & start compile" : "▶ Run code";
+        $("engStat").innerHTML = lang === "python"
+          ? "Engine: <b>" + (pyodide ? "CPython ready (Pyodide)" : "Pyodide CPython loads on first run (~10 MB, once)") + "</b>"
+          : "Engine: <b>real g++ on Compiler Explorer in your own tab — compile there, paste the output back below</b>";
+      }
+      $("tabPy").addEventListener("click", function () { setLang("python"); });
+      $("tabCpp").addEventListener("click", function () { setLang("cpp"); });
+      $("resetCodeBtn").addEventListener("click", function () { $("codeEditor").value = codeLang === "python" ? PY_TEMPLATE : CPP_TEMPLATE; });
+      $("runCodeBtn").addEventListener("click", function () {
+        var code = $("codeEditor").value;
+        codeStore[codeLang] = code;
+        if (!state.started) { print("Claim your signup bonus first — then your code can hit the grid.", "c-amber"); return; }
+        if (codeLang === "python") runPython(code, "code lab"); else runCpp(code);
+        document.querySelector(".termwrap").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      /* ---- library bar: pip install + worked examples ---- */
+      $("pipBtn").addEventListener("click", function () {
+        installPyPackage($("pipInput").value);
+        document.querySelector(".termwrap").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      $("pipInput").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("pipBtn").click(); } });
+      $("exNumpyBtn").addEventListener("click", function () {
+        setLang("python");
+        $("codeEditor").value = PY_NUMPY_TEMPLATE;
+        codeStore.python = PY_NUMPY_TEMPLATE;
+        print("[codelab] loaded the Python + numpy library example — hit ▶ Run code. First run installs the real numpy wheel via micropip (a few seconds).", "c-cyan");
+        $("codeEditor").focus();
+      });
+      $("exCppBtn").addEventListener("click", function () {
+        setLang("cpp");
+        $("codeEditor").value = CPP_LIB_TEMPLATE;
+        codeStore.cpp = CPP_LIB_TEMPLATE;
+        print("[codelab] loaded the C++ library example (<vector> <algorithm> <numeric> <cmath> + // LINK: -lm -pthread) — copy it, compile and run it with g++ in your Compiler Explorer tab, then paste the output back.", "c-cyan");
+        $("codeEditor").focus();
+      });
+      /* ---- C++ paste-back flow: copy out, link out, parse pasted output ---- */
+      $("copyCppBtn").addEventListener("click", function () { copyCppCode(false); });
+      $("parsePasteBtn").addEventListener("click", function () {
+        if (!state.started) { print("Claim your signup bonus first — then pasted output can hit the grid.", "c-amber"); return; }
+        handlePastedOutput($("cppPaste").value, "code lab");
+        document.querySelector(".termwrap").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      $("clearPasteBtn").addEventListener("click", function () { $("cppPaste").value = ""; $("cppPaste").focus(); });
+
+      /* ================= AI COPILOT ================= */
+      var queuedAction = null;
+      function copilotSay(html, action, label) {
+        $("aiOut").innerHTML = html;
+        queuedAction = action || null;
+        var qb = $("queueBtn");
+        if (action) { qb.textContent = label || "Run it"; qb.className = "btn queuebtn show"; }
+        else qb.className = "btn queuebtn";
+      }
+      $("queueBtn").addEventListener("click", function () {
+        if (!queuedAction) return;
+        if (queuedAction.type === "shell") runTerminalLine(queuedAction.cmd);
+        else if (queuedAction.type === "code") { setLang(queuedAction.lang); $("codeEditor").value = queuedAction.code; codeStore[queuedAction.lang] = queuedAction.code; print("[copilot] exploit draft loaded into the Code Lab — hit ▶ Run code.", "c-cyan"); }
+        $("cmdInput").focus();
+      });
+      function runCopilot(text) {
+        var q = (text || "").toLowerCase();
+        if (!q) { copilotSay("Tell me a target or a goal — e.g. “how do I hack cryptrat?”"); return; }
+        if (q.indexOf("defend") !== -1 || q.indexOf("firewall") !== -1 || q.indexOf("protect") !== -1 || q.indexOf("patch") !== -1) {
+          var open = Object.keys(PORTS).filter(function (s) { return !isDefended(s); })[0];
+          if (!open) { copilotSay("Every door on your rig is defended right now — firewall rules or stopped services cover ssh, http and smb. You're as hard as this rig gets. Go take someone else's money."); return; }
+          copilotSay("Defense is something you build yourself here — your rig started blank, no firewall at all. Your <b>" + open.toUpperCase() + "</b> door (port " + PORTS[open] + ") is wide open. Put a bouncer on it — this is a real iptables rule, the same one a real admin types:",
+                     { type: "shell", cmd: "iptables -A INPUT -p tcp --dport " + PORTS[open] + " -j DROP" }, "Run in terminal: iptables … --dport " + PORTS[open] + " DROP");
+          return;
+        }
+        var t = null;
+        targets.forEach(function (x) { if (q.indexOf(x.host) !== -1 || q.indexOf(x.op) !== -1 || q.indexOf(x.ip) !== -1) t = x; });
+        if (!t && state.selected) t = targets.filter(function (x) { return x.id === state.selected; })[0];
+        if (!t) { copilotSay("Name a target and I'll walk you through the real steps. Soft first targets: <b>darkvault</b> and <b>ghostline</b> (T1). blackcipher holds the most FRG but runs three services — more doors to check."); return; }
+        if (isDown(t)) { copilotSay("<b>" + esc(t.host) + "</b> is offline — someone beat you to it. It reboots in under a minute with a topped-up wallet."); return; }
+        var mod = MODULES[t.vuln].mod;
+        if (q.indexOf("python") !== -1 || q.indexOf("code") !== -1 || q.indexOf("script") !== -1 || q.indexOf("c++") !== -1 || q.indexOf("cpp") !== -1) {
+          var draft = ["import forge, json", "", "# recon", "print(json.dumps(forge.scan('" + t.host + "'), indent=1))", "", "# logs in the VM point at " + t.vuln.toUpperCase() + " — fire its module:", "print(forge.exploit('" + t.host + "', '" + mod + "'))"].join("\n");
+          copilotSay("Here's a real Python exploit draft for <b>" + esc(t.host) + "</b> using the forge bridge — CPython will run it as-is, and you can bend it into anything you invent. I picked <b>" + mod + "</b> because its " + t.vuln.toUpperCase() + " log line gives the misconfiguration away.",
+                     { type: "code", lang: "python", code: draft }, "Load this Python into the Code Lab");
+          return;
+        }
+        copilotSay("Real steps for <b>" + esc(t.host) + "</b>, same as real life: <b>1)</b> peek at its doors, <b>2)</b> read its logs — they whisper that " + t.vuln.toUpperCase() + " is misconfigured, <b>3)</b> fire the matching module <b>" + mod + "</b>. Start with the recon — this runs in the real VM:",
+                   { type: "shell", cmd: "grep -Rni enabled /targets/" + t.host + "/logs/" }, "Run in VM: grep its logs");
+      }
+      $("aiForm").addEventListener("submit", function (e) { e.preventDefault(); var v = $("aiInput").value; $("aiInput").value = ""; runCopilot(v); });
+
+      /* ================= RIVAL ATTACKS — resolved against your REAL defenses ================= */
+      function scheduleAttack() {
+        if (!state.started) return;
+        setTimeout(startAttack, 30000 + Math.random() * 25000);
+      }
+      function startAttack() {
+        if (!state.started || state.status !== "online" || state.attack) { scheduleAttack(); return; }
+        var svcs = Object.keys(PORTS);
+        var svc = svcs[Math.floor(Math.random() * svcs.length)];
+        var attackers = targets.filter(function (t) { return !isDown(t); });
+        var atk = attackers.length ? attackers[Math.floor(Math.random() * attackers.length)].op : "unknown";
+        state.attack = { service: svc, endsAt: now() + ATTACK_WINDOW, by: atk };
+        var def = isDefended(svc);
+        $("attackBanner").innerHTML = "⚠ <b>INTRUSION IN PROGRESS</b> — " + esc(atk) + " is pushing on your <b>" + svc.toUpperCase() + "</b> door (port " + PORTS[svc] + "). <span class='cd' id='attackCd'>12</span>s. " +
+          (def ? "Your defenses cover this door — it should bounce off." : "That door is OPEN. Guard it now: <b>iptables -A INPUT -p tcp --dport " + PORTS[svc] + " -j DROP</b>");
+        $("attackBanner").className = "attack show";
+        print("⚠ INTRUSION: " + atk + " → your " + svc.toUpperCase() + " (port " + PORTS[svc] + "). " + (def ? "Defended — watch it bounce." : "OPEN door! Type: iptables -A INPUT -p tcp --dport " + PORTS[svc] + " -j DROP"), "c-red b");
+        renderRig();
+      }
+      function resolveAttack() {
+        var a = state.attack; if (!a) return;
+        state.attack = null;
+        $("attackBanner").className = "attack";
+        if (isDefended(a.service)) {
+          state.balance += 15;
+          print("✓ attack on " + a.service.toUpperCase() + " BOUNCED OFF your real defenses (" + defenseReason(a.service) + "). Grid paid a +15 FRG defense bounty.", "c-grn");
+        } else {
+          var loss = Math.min(state.balance, Math.max(30, Math.round(state.balance * 0.15)));
+          state.balance -= loss;
+          state.status = "compromised";
+          state.stats.hacked++;
+          var atkT = findTarget(a.by); if (atkT) atkT.stats.hacks++;
+          print("✕ BREACH — " + a.by + " walked through your open " + a.service.toUpperCase() + " door (port " + PORTS[a.service] + ") and drained " + fmt(loss) + " FRG. No rule covered it — that's on the blank rig you didn't defend.", "c-red b");
+          print("your rig is OFFLINE. Reactivate for " + REACTIVATE_COST + " FRG, then build your firewall before they come back.", "c-red");
+          $("breachText").textContent = a.by + " breached your open " + a.service.toUpperCase() + " service and drained " + fmt(loss) + " FRG. Reactivate (" + REACTIVATE_COST + " FRG), then defend your doors in the terminal — iptables rules and stopped services are the only shields here.";
+        }
+        renderAll();
+        scheduleAttack();
+      }
+      setInterval(function () {
+        if (state.attack) {
+          var left = state.attack.endsAt - now();
+          var cd = $("attackCd"); if (cd) cd.textContent = Math.max(0, Math.ceil(left / 1000));
+          if (left <= 0) resolveAttack();
+        }
+      }, 400);
+      setInterval(function () {
+        if (!state.started || document.hidden) return;
+        var online = targets.filter(function (t) { return !isDown(t); });
+        if (online.length < 2) return;
+        var a = online[Math.floor(Math.random() * online.length)], b = online[Math.floor(Math.random() * online.length)];
+        if (a === b) return;
+        var amt = Math.min(15 + Math.floor(Math.random() * 45), b.wallet);
+        if (amt <= 0) return;
+        b.wallet -= amt; a.wallet += amt;
+        a.stats.hacks++; b.stats.hacked++;
+        print("[grid] " + a.op + " clipped " + b.op + " for " + fmt(amt) + " FRG.", "c-faint");
+        renderBoard(); renderTargets();
+      }, 26000);
+      setInterval(function () {
+        if (!state.started) return;
+        var changed = false;
+        targets.forEach(function (t) {
+          if (t.downUntil && t.downUntil <= now()) { t.downUntil = 0; t.wallet += 120; changed = true; print("[grid] " + t.host + " rebooted and is back online.", "c-faint"); }
+        });
+        if (changed) renderAll();
+      }, 3000);
+      function reactivate() {
+        if (state.status === "online") { print("your rig is already online.", "c-dim"); return; }
+        if (state.balance < REACTIVATE_COST) { print("reactivation costs " + REACTIVATE_COST + " FRG — you're short. Take a grid loan from the red panel above.", "c-red"); return; }
+        state.balance -= REACTIVATE_COST;
+        state.status = "online";
+        print("rig reactivated (−" + REACTIVATE_COST + " FRG). Fresh blank image — your firewall rules are GONE. Rebuild them before someone notices you're back.", "c-grn b");
+        defense.blockedPorts = {}; defense.defaultDeny = false; defense.closed = {}; defense.rules = [];
+        renderAll();
+        scheduleAttack();
+      }
+      $("reactivateBtn").addEventListener("click", reactivate);
+      $("loanBtn").addEventListener("click", function () {
+        if (state.loans >= 3) return;
+        state.loans++; state.balance += 200;
+        print("grid loan approved: +200 FRG (loan " + state.loans + "/3). The house always collects eventually.", "c-amber");
+        renderAll();
+      });
+
+      /* ================= PROFILES ================= */
+      var profWho = null, profDraft = null;
+      function kdStr(s) {
+        if (!s) return "0.00";
+        if (s.hacked === 0) return s.hacks === 0 ? "0.00" : s.hacks.toFixed(2);
+        return (s.hacks / s.hacked).toFixed(2);
+      }
+      function applyBanner(p) {
+        var banner = $("profBanner"), layer = $("profBgLayer");
+        banner.querySelectorAll(".custombg").forEach(function (el) { el.remove(); });
+        layer.className = "bglayer"; layer.style.display = "";
+        if (p.bgMode === "custom" && p.customBg) {
+          layer.style.display = "none";
+          var el;
+          if (p.customBg.kind === "video") { el = document.createElement("video"); el.autoplay = true; el.muted = true; el.loop = true; el.playsInline = true; }
+          else { el = document.createElement("img"); el.alt = ""; }
+          el.src = p.customBg.url; el.className = "bglayer custombg";
+          banner.insertBefore(el, banner.firstChild);
+        } else {
+          layer.classList.add("bg-" + p.bgMode + "-" + p.bg);
+        }
+      }
+      function profSource() {
+        if (!profWho || profWho === "me") return { name: state.handle, extra: PLAYER_HOST + " · " + (state.status === "online" ? "ONLINE" : "COMPROMISED"), ip: PLAYER_IP, profile: state.profile, stats: state.stats, frg: state.balance, mine: true };
+        var t = profWho;
+        return { name: t.op, extra: t.host + " · " + t.tier + " · " + (isDown(t) ? "OFFLINE" : "ONLINE"), ip: t.ip, profile: t.profile, stats: t.stats, frg: t.wallet, mine: false };
+      }
+      function renderProfileView() {
+        var s = profSource(), p = s.profile;
+        applyBanner(p);
+        var ava = $("profAvatar");
+        ava.innerHTML = "";
+        if (p.avatarImg) {
+          var im = document.createElement("img"); im.src = p.avatarImg; im.alt = s.name + " profile picture";
+          ava.appendChild(im); ava.style.background = "#0d2417";
+        } else {
+          ava.textContent = (s.name || "?").charAt(0).toUpperCase();
+          ava.style.background = p.avatarColor || "#17c964"; ava.style.color = "#03130a";
+        }
+        $("profName").textContent = s.name;
+        $("profSub").innerHTML = esc(s.extra) + " · IP <b>" + esc(s.ip) + "</b> · subnet " + GRID_SUBNET;
+        var bio = $("profBio");
+        bio.textContent = p.bio ? p.bio : (s.mine ? "No bio yet — write one in the editor below." : "No bio yet.");
+        bio.className = "pbio" + (p.bio ? "" : " empty");
+        $("profHacks").textContent = s.stats.hacks;
+        $("profHacked").textContent = s.stats.hacked;
+        $("profKD").textContent = kdStr(s.stats);
+        $("profFRG").textContent = fmt(s.frg);
+        var mw = $("profMedia"); mw.innerHTML = "";
+        if (!p.media || !p.media.length) {
+          var none = document.createElement("div"); none.className = "none";
+          none.textContent = s.mine ? "No media yet — add photos in the editor below." : "No media on this profile.";
+          mw.appendChild(none);
+        } else p.media.forEach(function (m) {
+          var fig = document.createElement("figure");
+          if (m.tile) {
+            var tile = document.createElement("div"); tile.className = "tile"; tile.style.background = m.bg; tile.textContent = m.label;
+            fig.appendChild(tile);
+          } else {
+            var img = document.createElement("img"); img.src = m.src; img.alt = m.cap || "Profile media"; fig.appendChild(img);
+            var cap = document.createElement("figcaption"); cap.textContent = m.cap || ""; fig.appendChild(cap);
+          }
+          mw.appendChild(fig);
+        });
+        $("profEdit").style.display = s.mine ? "" : "none";
+        $("profTargetBtn").style.display = s.mine ? "none" : "";
+      }
+      function openProfile(who) {
+        profWho = who || "me";
+        if (profWho === "me") startDraft();
+        renderProfileView();
+        $("profileOverlay").className = "poverlay";
+        $("profileOverlay").scrollTop = 0;
+      }
+      function closeProfile() { $("profileOverlay").className = "poverlay hide"; }
+      /* ---- editor: everything is a draft with previews until Save ---- */
+      function startDraft() {
+        var p = state.profile;
+        profDraft = { bio: p.bio, avatarImg: p.avatarImg, avatarColor: p.avatarColor, bgMode: p.bgMode, bg: p.bg, customBg: p.customBg, customPending: null, media: p.media.slice() };
+        $("editBio").value = profDraft.bio || "";
+        $("editAvatarFile").value = ""; $("editBgFile").value = ""; $("editMediaFiles").value = "";
+        var ap = $("avaPreview");
+        if (profDraft.avatarImg) { ap.src = profDraft.avatarImg; ap.style.display = ""; } else ap.style.display = "none";
+        hideBgPreview();
+        if (profDraft.bgMode === "custom" && profDraft.customBg) showBgPreview(profDraft.customBg, "CURRENT LIVE BACKGROUND: " + (profDraft.customBg.name || "your upload"));
+        buildSwatches(); renderMedThumbs();
+      }
+      function buildSwatches() {
+        if (!profDraft) return;
+        var s1 = $("bgStaticSw"); s1.innerHTML = "";
+        BG_STATIC.forEach(function (v) { addBgSwatch(s1, v, "static"); });
+        var s2 = $("bgLiveSw"); s2.innerHTML = "";
+        BG_LIVE.forEach(function (v) { addBgSwatch(s2, v, "live"); });
+        var ac = $("avaColors"); ac.innerHTML = "";
+        AVA_COLORS.forEach(function (col) {
+          var b = document.createElement("button");
+          b.type = "button"; b.className = "sw" + (!profDraft.avatarImg && profDraft.avatarColor === col ? " sel" : "");
+          b.style.background = col; b.title = "Initial color " + col;
+          b.addEventListener("click", function () { profDraft.avatarColor = col; profDraft.avatarImg = null; $("avaPreview").style.display = "none"; buildSwatches(); });
+          ac.appendChild(b);
+        });
+      }
+      function addBgSwatch(container, val, mode) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "sw" + (profDraft.bgMode === mode && profDraft.bg === val ? " sel" : "");
+        b.title = (mode === "live" ? "Live background: " : "Background: ") + val;
+        var inner = document.createElement("span"); inner.className = "bglayer bg-" + mode + "-" + val;
+        b.appendChild(inner);
+        b.addEventListener("click", function () { profDraft.bgMode = mode; profDraft.bg = val; profDraft.customPending = null; hideBgPreview(); buildSwatches(); });
+        container.appendChild(b);
+      }
+      function hideBgPreview() {
+        var bp = $("bgPreview"); bp.className = "bgprev";
+        bp.querySelectorAll("video,img").forEach(function (el) { el.remove(); });
+      }
+      function showBgPreview(item, label) {
+        hideBgPreview();
+        var bp = $("bgPreview"), el;
+        if (item.kind === "video") { el = document.createElement("video"); el.autoplay = true; el.muted = true; el.loop = true; el.playsInline = true; }
+        else { el = document.createElement("img"); el.alt = ""; }
+        el.src = item.url;
+        bp.insertBefore(el, bp.firstChild);
+        $("bgPreviewLbl").textContent = label;
+        bp.className = "bgprev show";
+      }
+      function renderMedThumbs() {
+        if (!profDraft) return;
+        var w = $("medThumbs"); w.innerHTML = "";
+        profDraft.media.forEach(function (m, i) {
+          if (m.tile) return;
+          var fig = document.createElement("figure");
+          var im = document.createElement("img"); im.src = m.src; im.alt = m.cap || "Profile media preview";
+          fig.appendChild(im);
+          var x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = "Remove this photo";
+          x.addEventListener("click", function () { profDraft.media.splice(i, 1); renderMedThumbs(); });
+          fig.appendChild(x); w.appendChild(fig);
+        });
+      }
+      $("editAvatarFile").addEventListener("change", function () {
+        var f = this.files && this.files[0]; if (!f || !profDraft) return;
+        var r = new FileReader();
+        r.onload = function () { profDraft.avatarImg = String(r.result); var ap = $("avaPreview"); ap.src = profDraft.avatarImg; ap.style.display = ""; buildSwatches(); };
+        r.readAsDataURL(f);
+      });
+      $("editBgFile").addEventListener("change", function () {
+        var f = this.files && this.files[0]; if (!f || !profDraft) return;
+        var kind = f.type.indexOf("video/") === 0 ? "video" : "image";
+        var url = URL.createObjectURL(f);
+        profDraft.bgMode = "custom";
+        profDraft.customPending = { kind: kind, url: url, name: f.name };
+        showBgPreview(profDraft.customPending, "PREVIEW: " + f.name + " — hit Save profile to apply it");
+        buildSwatches();
+      });
+      $("editMediaFiles").addEventListener("change", function () {
+        var files = this.files; if (!files || !profDraft) return;
+        Array.prototype.forEach.call(files, function (f) {
+          if (f.type.indexOf("image/") !== 0) return;
+          var r = new FileReader();
+          r.onload = function () { profDraft.media.push({ src: String(r.result), cap: f.name }); renderMedThumbs(); };
+          r.readAsDataURL(f);
+        });
+      });
+      $("profSaveBtn").addEventListener("click", function () {
+        if (!profDraft) return;
+        var old = state.profile.customBg;
+        var committed = profDraft.customPending || profDraft.customBg;
+        state.profile = { bio: $("editBio").value.slice(0, 240), avatarImg: profDraft.avatarImg, avatarColor: profDraft.avatarColor, bgMode: profDraft.bgMode, bg: profDraft.bg, customBg: committed, media: profDraft.media.slice() };
+        if (old && old.url && profDraft.customPending && committed !== old) { try { URL.revokeObjectURL(old.url); } catch (e) {} }
+        profDraft.customBg = committed; profDraft.customPending = null;
+        renderProfileView();
+        print("[profile] saved — bio, picture, background and media are live on your profile. Record so far: " + state.stats.hacks + " successful hacks · hacked " + state.stats.hacked + "× · K/D " + kdStr(state.stats) + ".", "c-grn");
+      });
+      $("profClose").addEventListener("click", closeProfile);
+      $("profDoneBtn").addEventListener("click", closeProfile);
+      $("profileOverlay").addEventListener("click", function (e) { if (e.target === this) closeProfile(); });
+      $("profTargetBtn").addEventListener("click", function () { if (profWho && profWho !== "me") { selectTarget(profWho.id, true); closeProfile(); } });
+      $("myProfileBtn").addEventListener("click", function () { openProfile("me"); });
+      $("selProfileBtn").addEventListener("click", function () {
+        var t = targets.filter(function (x) { return x.id === state.selected; })[0];
+        if (t) openProfile(t); else print("Select a rig on the map or in the target list first — then view its profile.", "c-amber");
+      });
+
+      /* ================= YEAR-3000 MATRIX RAIN (app backdrop, not profiles) ================= */
+      (function () {
+        var c = $("matrixCanvas"); if (!c) return;
+        var g = c.getContext("2d"); if (!g) return;
+        var glyphs = "アカサタナハマヤラワガザダバパ0123456789ABCDEF<>/=+*#$";
+        var W = 0, H = 0, cols = [];
+        function size() {
+          W = c.width = Math.floor(window.innerWidth); H = c.height = Math.floor(window.innerHeight);
+          var n = Math.max(12, Math.min(90, Math.floor(W / 20)));
+          cols = [];
+          for (var i = 0; i < n; i++) cols.push({ x: i * 20 + 10, y: Math.random() * H, s: 0.5 + Math.random() * 1.2 });
+        }
+        size();
+        window.addEventListener("resize", size);
+        if (reduced) {
+          g.font = "14px monospace"; g.fillStyle = "rgba(31,214,114,.28)";
+          cols.forEach(function (col) { for (var y = 14; y < H; y += 30) if (Math.random() < 0.45) g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], col.x, y); });
+          return;
+        }
+        var last = 0;
+        function frame(ts) {
+          requestAnimationFrame(frame);
+          if (document.hidden || ts - last < 50) return;
+          last = ts;
+          g.fillStyle = "rgba(4,7,10,.16)"; g.fillRect(0, 0, W, H);
+          g.font = "14px monospace";
+          for (var i = 0; i < cols.length; i++) {
+            var col = cols[i], r = Math.random();
+            g.fillStyle = r < 0.05 ? "#aef3ff" : (r < 0.16 ? "#39d5e8" : "#1fd672");
+            g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], col.x, col.y);
+            col.y += 15 * col.s;
+            if (col.y > H + 30 && Math.random() < 0.02) col.y = -20;
+          }
+        }
+        requestAnimationFrame(frame);
+      })();
+
+      /* ================= SIGNUP / INIT ================= */
+      $("claimBtn").addEventListener("click", function () {
+        var h = $("handleInput").value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+        state.handle = h || "guest_7";
+        state.balance = 500;
+        state.started = true;
+        $("signup").className = "signup hide";
+        $("promptTxt").textContent = state.handle + "@forge:~$";
+        $("termTitle").textContent = state.handle + "@flagforge: real Linux VM (v86 · serial console)";
+        print("╔══════════════════════════════════════════════╗", "c-grn");
+        print("  SIGNUP BONUS CREDITED: +500 FRG", "c-amber b");
+        print("  welcome to the grid, " + state.handle + ".", "c-grn");
+        print("╚══════════════════════════════════════════════╝", "c-grn");
+        print("New here? The Learn to Play panel below the terminal explains it like you're 6 — read it once and you're in.", "c-cyan");
+        print("Your rig is BLANK: no firewall, no locks. Lesson one — put a bouncer on door 22:", "c-amber");
+        print("  iptables -A INPUT -p tcp --dport 22 -j DROP", "c-white b");
+        print("Then go hunting:  ls -la /targets", "c-dim");
+        print("Your rig's IP is " + PLAYER_IP + " — rivals are targetable by IP too. Make yourself known: ◉ MY PROFILE up top (bio, picture, live background, media, K/D).", "c-cyan");
+        renderAll();
+        scheduleAttack();
+        $("cmdInput").focus();
+      });
+      $("handleInput").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("claimBtn").click(); } });
+
+      $("codeEditor").value = PY_TEMPLATE;
+      sizeCanvas();
+      renderAll();
+      mapLoop(0);
+      initVM();
+    </script>
+  </body>
+</html>
